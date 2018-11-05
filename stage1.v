@@ -27,7 +27,7 @@ module control(
 	output enable
 	);
 
-	clock_devider(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable));
+	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable));
 
 endmodule
 
