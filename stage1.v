@@ -6,16 +6,21 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 	output [9:0] LEDR;
 
 	wire resetn;
+	wire enable;
 	assign resetn = KEY[0];
 
 	control c0(.clk(CLOCK_50),
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
 
-			   .enable(LEDR[0]));
+			   .enable(enable));
 
 	datapath d0(.clk(CLOCK_50),
-				.switches(SW[9:0]));
+				.switches(SW[9:0]),
+				.resetn(resetn),
+				.go(enable),
+
+				.address(LEDR[5:0]));
 
 endmodule
 
@@ -33,8 +38,24 @@ endmodule
 
 module datapath(
 	input clk,
-	input [9:0] switches
+	input [9:0] switches,
+	input resetn,
+	input go,
+
+	output reg [5:0] address
 	);
+
+	always @ (posedge clk) begin
+		if (~resetn) begin
+			address <= 0;
+		end
+		else begin
+			if (go) begin
+				address <= address + 1;
+			end
+		end
+	end
+
 
 endmodule
 //  RAM 64 words x 32 bits
@@ -42,7 +63,7 @@ endmodule
 module clock_devider(
 	input clk,
 	input resetn,
-	input speed,
+	input [2:0] speed,
 	output slower_clk
 	);
 
@@ -59,23 +80,19 @@ module clock_devider(
 	// 005 : 140 nodes/min
 	// 006 : 180 nodes/min
 	// 007 : 220 nodes/min
+
 	always @ (*) begin
-		if (speed == 3'd0)
-			maxCounter = 27'd75000000;
-		else if (speed == 3'd1)
-			maxCounter = 27'd50000000;
-		else if (speed == 3'd2)
-			maxCounter = 27'd37500000;
-		else if (speed == 3'd3)
-			maxCounter = 27'd30000000;
-		else if (speed == 3'd4)
-			maxCounter = 27'd25000000;
-		else if (speed == 3'd5)
-			maxCounter = 27'd21428571;
-		else if (speed == 3'd6)
-			maxCounter = 27'd16666667;
-		else if (speed == 3'd7)
-			maxCounter = 27'd13636364;
+		case (speed)
+			3'b000: maxCounter = 27'd75000000;
+			3'b001: maxCounter = 27'd50000000;
+			3'b010: maxCounter = 27'd37500000;
+			3'b011: maxCounter = 27'd30000000;
+			3'b100: maxCounter = 27'd25000000;
+			3'b101: maxCounter = 27'd21428571;
+			3'b110: maxCounter = 27'd16666667;
+			3'b111: maxCounter = 27'd13636364;
+			default: maxCounter = 27'd50000000;
+		endcase
 	end
 
 	always @ (posedge clk) begin
