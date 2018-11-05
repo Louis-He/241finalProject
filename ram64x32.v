@@ -4,7 +4,7 @@
 // MODULE: altsyncram 
 
 // ============================================================
-// File Name: ram40x25.v
+// File Name: ram64x32.v
 // Megafunction Name(s):
 // 			altsyncram
 //
@@ -36,7 +36,7 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module ram40x25 (
+module ram64x32 (
 	address,
 	clock,
 	data,
@@ -163,10 +163,10 @@ endmodule
 // Retrieval info: CONNECT: @data_a 0 0 32 0 data 0 0 32 0
 // Retrieval info: CONNECT: @wren_a 0 0 0 0 wren 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 32 0 @q_a 0 0 32 0
-// Retrieval info: GEN_FILE: TYPE_NORMAL ram40x25.v TRUE
-// Retrieval info: GEN_FILE: TYPE_NORMAL ram40x25.inc FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL ram40x25.cmp FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL ram40x25.bsf FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL ram40x25_inst.v FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL ram40x25_bb.v TRUE
+// Retrieval info: GEN_FILE: TYPE_NORMAL ram64x32.v TRUE
+// Retrieval info: GEN_FILE: TYPE_NORMAL ram64x32.inc FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL ram64x32.cmp FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL ram64x32.bsf FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL ram64x32_inst.v FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL ram64x32_bb.v TRUE
 // Retrieval info: LIB_FILE: altera_mf
