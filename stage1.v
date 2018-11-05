@@ -6,9 +6,9 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 	output [9:0] LEDR;
 
 	wire resetn;
-	resetn = KEY[0];
+	assign resetn = KEY[0];
 
-	contorl c0(.clk(CLOCK_50),
+	control c0(.clk(CLOCK_50),
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
 
@@ -33,7 +33,7 @@ endmodule
 
 module datapath(
 	input clk,
-	input [9:0] switches,
+	input [9:0] switches
 	);
 
 endmodule
