@@ -13,7 +13,8 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
 
-			   .enable(enable));
+			   .enable(enable),
+			   .record_high(LEDR[9]));
 
 	datapath d0(.clk(CLOCK_50),
 				.switches(SW[9:0]),
@@ -29,10 +30,11 @@ module control(
 	input [9:0] switches,
 	input resetn,
 
-	output enable
+	output enable,
+	output record_high
 	);
 
-	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable));
+	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable), .record_high(record_high));
 
 endmodule
 
@@ -64,10 +66,12 @@ module clock_devider(
 	input clk,
 	input resetn,
 	input [2:0] speed,
-	output slower_clk
+	output slower_clk,
+	output record_high
 	);
 
 	assign slower_clk = (counter == 0) ? 1 : 0;
+	assign record_high = (counter < maxCounter - 27'd10000) ? 1 : 0;
 
 	reg [26:0] counter; // maximun: 75,000,000
 	reg [26:0] maxCounter; // maximun: 75,000,000

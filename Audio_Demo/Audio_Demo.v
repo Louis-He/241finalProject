@@ -1,5 +1,5 @@
 
-module DE1_SoC_Audio_Example (
+module Audio_Demo (
 	// Inputs
 	CLOCK_50,
 	KEY,
@@ -66,7 +66,7 @@ wire				write_audio_out;
 // Internal Registers
 
 reg [18:0] delay_cnt;
-wire [18:0] delay;
+reg [18:0] delay;
 
 reg snd;
 
@@ -91,7 +91,22 @@ always @(posedge CLOCK_50)
  *                            Combinational Logic                            *
  *****************************************************************************/
 
-assign delay = {SW[3:0], 15'd3000};
+// assign delay = {SW[3:0], 15'd3000};
+always @(*)
+begin
+	case(SW[3:0])
+		3'd0: delay = 18'd0; 
+		3'd1: delay = 18'd191131; 
+		3'd2: delay = 18'd170242; 
+		3'd3: delay = 18'd151515; 
+		3'd4: delay = 18'd131926; 
+		3'd5: delay = 18'd127551; 
+		3'd6: delay = 18'd113636; 
+		3'd7: delay = 18'd101235; 
+	endcase
+end
+
+
 
 wire [31:0] sound = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
 
