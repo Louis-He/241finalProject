@@ -8,8 +8,13 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 	wire resetn;
 	wire enable;
 	assign resetn = KEY[0];
+	assign select = ~KEY[3];
+	assign back = ~KEY[2];
 
 	control c0(.clk(CLOCK_50),
+			   .back(back),
+			   .select(select),
+			   .go(go),
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
 
@@ -27,14 +32,70 @@ endmodule
 
 module control(
 	input clk,
+	input back,
+	input select,
+	input go,
 	input [9:0] switches,
 	input resetn,
 
+	input mode,
+
 	output enable,
 	output record_high
+
+	output ld_selection,
 	);
 
 	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable), .record_high(record_high));
+
+	// ######################## FINITE STATE MACHINE ##############################
+	reg [3:0] current_state;
+	reg [3:0] next_state;
+
+	localparam  S_BEGIN              = 4'd0,
+				S_SELECT_MODE        = 4'd1,
+				S_SELECT_MODE_WAIT   = 4'd1,
+				S_WAIT_RECORD        = 4'd2,
+				S_RECORDING          = 4'd3,
+				S_RECORD_STOP        = 4'd4,
+				S_END                = 4'd5
+
+	// state_table
+	always@(*)
+    begin: state_table
+        case (current_state)
+			S_BEGIN: next_state = S_SELECT_MODE;
+			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
+			S_SELECT_MODE_WAIT: begin
+				if(mode == 2'd0): begin
+					next_state = S_WAIT_RECORD;
+				end
+			end
+
+
+		endcase
+	end
+
+	// Output logic aka all of our datapath control signals
+    always @(*)
+    begin: enable_signals
+		ld_selection = 0;
+
+		case (current_state)
+			S_SELECT_MODE:
+				ld_selection = 1;
+
+		endcase
+	end
+
+	// state_FFs
+    always@(posedge clk)
+	begin: state_FFs
+
+
+	end
+
+	// ######################## FINITE STATE MACHINE END ##############################
 
 endmodule
 
