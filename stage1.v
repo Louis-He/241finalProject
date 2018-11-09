@@ -52,13 +52,17 @@ module control(
 	reg [3:0] current_state;
 	reg [3:0] next_state;
 
-	localparam  S_BEGIN              = 4'd0,
-				S_SELECT_MODE        = 4'd1,
-				S_SELECT_MODE_WAIT   = 4'd1,
-				S_WAIT_RECORD        = 4'd2,
-				S_RECORDING          = 4'd3,
-				S_RECORD_STOP        = 4'd4,
-				S_END                = 4'd5
+	localparam  S_BEGIN              = 5'd0,
+				S_SELECT_MODE        = 5'd1,
+				S_SELECT_MODE_WAIT   = 5'd2,
+
+				S_RECORD_BEGIN       = 5'd3,
+				S_WAIT_RECORD        = 5'd4,
+				S_WAIT_RECORD_WAIT   = 5'd5,
+				S_RECORDING          = 5'd6,
+				S_RECORDING_WAIT     = 5'd7,
+				S_RECORD_STOP        = 5'd8,
+				S_END                = 5'd9;
 
 	// state_table
 	always@(*)
@@ -67,12 +71,54 @@ module control(
 			S_BEGIN: next_state = S_SELECT_MODE;
 			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
 			S_SELECT_MODE_WAIT: begin
-				if(mode == 2'd0): begin
+				if(select == 0) begin
+					if(mode == 2'd0): begin
+						next_state = S_RECORD_BEGIN;
+					end
+					/*
+					else if (condition) begin
+
+					end
+					*/
+				end
+				else
+					next_state = S_SELECT_MODE_WAIT;
+			end
+			//################### RECORD MODE FSM #################
+			S_RECORD_BEGIN: next_state = select ? S_RECORD_BEGIN : S_WAIT_RECORD;
+			S_WAIT_RECORD: begin
+				if (back) begin
+					next_state = S_SELECT_MODE;
+				end
+				else if (select) begin
+					next_state = S_WAIT_RECORD_WAIT;
+				end
+				else begin
 					next_state = S_WAIT_RECORD;
 				end
 			end
-
-
+			S_WAIT_RECORD_WAIT: next_state = select ? S_WAIT_RECORD : S_RECORDING;
+			S_RECORDING: begin
+				if (back) begin
+					next_state = S_RECORD_BEGIN;
+				end
+				else if (select) begin
+					next_state = S_RECORDING_WAIT;
+				end
+				else begin
+					next_state = S_RECORDING;
+				end
+			end
+			S_RECORDING_WAIT: next_state = select ? S_RECORDING_WAIT : S_RECORD_STOP;
+			S_RECORD_STOP: begin
+				if (select | back) begin
+					next_state = S_SELECT_MODE;
+				end
+				else begin
+					next_state = S_RECORD_STOP;
+				end
+			end
+			//################# RECORD MODE FSM END#################
 		endcase
 	end
 
