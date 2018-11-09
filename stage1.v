@@ -17,9 +17,11 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 			   .go(go),
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
+			   .mode(mode),
 
 			   .enable(enable),
-			   .record_high(LEDR[9]));
+			   .record_high(LEDR[9]),
+			   ld_selection);
 
 	datapath d0(.clk(CLOCK_50),
 				.switches(SW[9:0]),
@@ -41,7 +43,7 @@ module control(
 	input mode,
 
 	output enable,
-	output record_high
+	output record_high,
 
 	output ld_selection,
 	);
