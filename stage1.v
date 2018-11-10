@@ -6,10 +6,16 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 	output [9:0] LEDR;
 
 	wire resetn;
-	wire enable;
+	wire select;
+	wire back;
 	assign resetn = KEY[0];
 	assign select = ~KEY[3];
 	assign back = ~KEY[2];
+
+	wire enable;
+	wire record_high;
+	wire record_reset;
+	wire ld_selection;
 
 	control c0(.clk(CLOCK_50),
 			   .back(back),
@@ -20,8 +26,10 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 			   .mode(mode),
 
 			   .enable(enable),
-			   .record_high(LEDR[9]),
-			   ld_selection);
+			   .record_high(record_high),
+			   .record_reset(record_reset),
+			   .ld_selection(ld_selection),
+			   .state(LEDR[4:0]));
 
 	datapath d0(.clk(CLOCK_50),
 				.switches(SW[9:0]),
@@ -45,7 +53,9 @@ module control(
 	output enable,
 	output record_high,
 
-	output ld_selection,
+	output reg record_reset,
+	output reg ld_selection,
+	output reg [4:0] state
 	);
 
 	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable), .record_high(record_high));
@@ -58,7 +68,6 @@ module control(
 				S_SELECT_MODE        = 5'd1,
 				S_SELECT_MODE_WAIT   = 5'd2,
 
-				S_RECORD_BEGIN       = 5'd3,
 				S_WAIT_RECORD        = 5'd4,
 				S_WAIT_RECORD_WAIT   = 5'd5,
 				S_RECORDING          = 5'd6,
@@ -74,8 +83,8 @@ module control(
 			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
 			S_SELECT_MODE_WAIT: begin
 				if(select == 0) begin
-					if(mode == 2'd0): begin
-						next_state = S_RECORD_BEGIN;
+					if(mode == 2'd1) begin
+						next_state = S_WAIT_RECORD;
 					end
 					/*
 					else if (condition) begin
@@ -87,7 +96,6 @@ module control(
 					next_state = S_SELECT_MODE_WAIT;
 			end
 			//################### RECORD MODE FSM #################
-			S_RECORD_BEGIN: next_state = select ? S_RECORD_BEGIN : S_WAIT_RECORD;
 			S_WAIT_RECORD: begin
 				if (back) begin
 					next_state = S_SELECT_MODE;
@@ -99,12 +107,9 @@ module control(
 					next_state = S_WAIT_RECORD;
 				end
 			end
-			S_WAIT_RECORD_WAIT: next_state = select ? S_WAIT_RECORD : S_RECORDING;
+			S_WAIT_RECORD_WAIT: next_state = select ? S_WAIT_RECORD_WAIT : S_RECORDING;
 			S_RECORDING: begin
-				if (back) begin
-					next_state = S_RECORD_BEGIN;
-				end
-				else if (select) begin
+				if (select) begin
 					next_state = S_RECORDING_WAIT;
 				end
 				else begin
@@ -114,12 +119,13 @@ module control(
 			S_RECORDING_WAIT: next_state = select ? S_RECORDING_WAIT : S_RECORD_STOP;
 			S_RECORD_STOP: begin
 				if (select | back) begin
-					next_state = S_SELECT_MODE;
+					next_state = S_END;
 				end
 				else begin
 					next_state = S_RECORD_STOP;
 				end
 			end
+			S_END: next_state = S_BEGIN;
 			//################# RECORD MODE FSM END#################
 		endcase
 	end
@@ -128,11 +134,13 @@ module control(
     always @(*)
     begin: enable_signals
 		ld_selection = 0;
+		record_reset = 0;
 
 		case (current_state)
 			S_SELECT_MODE:
 				ld_selection = 1;
-
+			S_WAIT_RECORD_WAIT:
+				record_reset = 1;
 		endcase
 	end
 

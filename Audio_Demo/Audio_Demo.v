@@ -66,9 +66,12 @@ wire				write_audio_out;
 // Internal Registers
 
 reg [18:0] delay_cnt;
+reg [18;0] delay_cnt2;
 reg [18:0] delay;
+reg [18:0] delay2;
 
 reg snd;
+reg snd2;
 
 // State Machine Registers
 
@@ -86,6 +89,10 @@ always @(posedge CLOCK_50)
 		delay_cnt <= 0;
 		snd <= !snd;
 	end else delay_cnt <= delay_cnt + 1;
+	if(delay_cnt2 == delay2) begin
+		delay_cnt2 <= 0;
+		snd2 <= !snd2;
+	end else delay_cnt2 <= delay_cnt2 + 1;
 
 /*****************************************************************************
  *                            Combinational Logic                            *
@@ -95,21 +102,20 @@ always @(posedge CLOCK_50)
 always @(*)
 begin
 	case(SW[3:0])
-		3'd0: delay = 18'd0; 
-		3'd1: delay = 18'd191131; 
-		3'd2: delay = 18'd170242; 
-		3'd3: delay = 18'd151515; 
-		3'd4: delay = 18'd131926; 
-		3'd5: delay = 18'd127551; 
-		3'd6: delay = 18'd113636; 
-		3'd7: delay = 18'd101235; 
+		3'd0: delay = 18'd0;
+		3'd1: delay = 18'd191131;
+		3'd2: delay = 18'd170242;
+		3'd3: delay = 18'd151515;
+		3'd4: delay = 18'd131926;
+		3'd5: delay = 18'd127551;
+		3'd6: delay = 18'd113636;
+		3'd7: delay = 18'd101235;
 	endcase
 end
 
-
-
-wire [31:0] sound = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
-
+wire [31:0] sound1 = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
+wire [31:0] sound2 = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
+wire [31:0] sound = sound1 + sound2
 
 assign read_audio_in			= audio_in_available & audio_out_allowed;
 
@@ -128,7 +134,7 @@ Audio_Controller Audio_Controller (
 
 	.clear_audio_in_memory		(),
 	.read_audio_in				(read_audio_in),
-	
+
 	.clear_audio_out_memory		(),
 	.left_channel_audio_out		(left_channel_audio_out),
 	.right_channel_audio_out	(right_channel_audio_out),
@@ -162,4 +168,3 @@ avconf #(.USE_MIC_INPUT(1)) avc (
 );
 
 endmodule
-
