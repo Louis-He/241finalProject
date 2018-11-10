@@ -149,66 +149,81 @@ endmodule
 
 ////////////////////////////////Data Path/////////////////////////////// 
 module datapath(
-	input mode, //mode,record (1) OR play(0)
-	input reset_address,
-	input go,
+   input clk,
 	
-	input [4:0]S,//input from the guitar
-	input [4:0]P,
+	input mode, //mode,record (1) OR play(0)
+	input go,
+	input reset_address,
+	
+	
+	input [5:0]S,//6 strings input from the guitar
+	input [4:0]P,//4 horizontal metal bar + no bar is pressed 
 
-	output [31:0]note, //output to the audio module
+	output [31:0]note //output to the audio module
 	);
 	
+
    reg [5:0] address;
-	
-	
 	//make the address to increase when record
-	always @ (posedge go) begin
-		if (reset_address) begin
+	always @ (posedge go) 
+	begin
+		if (reset_address) 
+		begin
 			address <= 0;
 		end
-		else begin
+		
+		else 
+		begin
 				address <= address + 1;
-			end
 		end
+
 	end
 //
 
 	
 
-	reg [4:0]s,p;
+	reg [5:0]s;
+	reg [4:0]p;
 	//process of record
 	always @ (posedge clk) begin
 		if(go == 1'b1)begin
 		  if(S[0]==1)
 		     s[0]<= 1'b1;
 		  if(S[1]==1)
-		     s[1]<= 1'b1;
+		     s[1]<= 1'b0;
 		  if(S[2]==1)
 		     s[2]<= 1'b1;
 		  if(S[3]==1)
 		     s[3]<= 1'b1;
 		  if(S[4]==1)
-		     s[4]<= 1'b1;  
+		     s[4]<= 1'b1;
+		  if(S[5]==1)
+		     s[5]<= 1'b1;  
 
-		  if(P[0]==1)
+		  if((P[1]==0)&(P[2]==0)&(P[3]==0)&(P[4]==0)) //no bar is pressed
 		     p[0]<= 1'b1;
-		  if(P[1]==1)
+		  if((P[1]==1)&(P[2]==0)&(P[3]==0)&(P[4]==0))
 		     p[1]<= 1'b1;
-		  if(P[2]==1)
+		  if((P[2]==1)&(P[3]==0)&(P[4]==0))
 		     p[2]<= 1'b1;
-		  if(P[3]==1)
+		  if((P[3]==1)&(P[4]==0))
 		     p[3]<= 1'b1;
 		  if(P[4]==1)
 		     p[4]<= 1'b1; 
 		end
 	end
 //Now the [4:0]s,p store all information during go=1
-
-
+// start of next go,Note should be cleared
+always @ (posedge go) 
+begin
+s[5:0]<=6'b0;
+p[4:0]<=5'b0;
+end
+//
 wire [31:0]Note;
-coordinates_converter C_C0(.S(s),.P(p),.note(Note));
-ram64x32 r(.data(Note), .wren(mode), .address(address), .clock(~go), .q(note));
+coordinates_converter C_C0(.S(s),.P(p),.note(note));
+
+//ram64x32 r(.data(Note), .wren(mode), .address(address), .clock(~go), .q(note));
 //when go=0, mode=1,bits are loaded to the ram
 //when go=0, mode=0,bits are read from the ram
 
@@ -219,50 +234,50 @@ endmodule
 
 //[4:0]S,P to coordinates converter
 module coordinates_converter(S,P,note);
-input [4:0]S,P;
+input [5:0]S;
+input [4:0]P;
 output[31:0]note;
 
-//if no P is pushed P_empty=1
-assign P_empty = (~P[0])&(~P[1])&(~P[2])&(~P[3])&(~P[4]); 
+//if no P is pushed P[0]=1;
+assign P[0]=(~P[1])&(~P[2])&(~P[3])&(~P[4]);
 
 assign note[0]=S[0]&P[0];
 assign note[1]=S[1]&P[0];
 assign note[2]=S[2]&P[0];
 assign note[3]=S[3]&P[0];
 assign note[4]=S[4]&P[0];
+assign note[5]=S[5]&P[0];
 
-assign note[5]=S[0]&P[1];
-assign note[6]=S[1]&P[1];
-assign note[7]=S[2]&P[1];
-assign note[8]=S[3]&P[1];
-assign note[9]=S[4]&P[1];
+assign note[6]=S[0]&P[1];
+assign note[7]=S[1]&P[1];
+assign note[8]=S[2]&P[1];
+assign note[9]=S[3]&P[1];
+assign note[10]=S[4]&P[1];
+assign note[11]=S[5]&P[1];
 
-assign note[10]=S[0]&P[2];
-assign note[11]=S[1]&P[2];
-assign note[12]=S[2]&P[2];
-assign note[13]=S[3]&P[2];
-assign note[14]=S[4]&P[2];
+assign note[12]=S[0]&P[2];
+assign note[13]=S[1]&P[2];
+assign note[14]=S[2]&P[2];
+assign note[15]=S[3]&P[2];
+assign note[16]=S[4]&P[2];
+assign note[17]=S[5]&P[2];
 
-assign note[15]=S[0]&P[3];
-assign note[16]=S[1]&P[3];
-assign note[17]=S[2]&P[3];
-assign note[18]=S[3]&P[3];
-assign note[19]=S[4]&P[3];
+assign note[18]=S[0]&P[3];
+assign note[19]=S[1]&P[3];
+assign note[20]=S[2]&P[3];
+assign note[21]=S[3]&P[3];
+assign note[22]=S[4]&P[3];
+assign note[23]=S[5]&P[3];
 
-assign note[20]=S[0]&P[4];
-assign note[21]=S[1]&P[4];
-assign note[22]=S[2]&P[4];
-assign note[23]=S[3]&P[4];
-assign note[24]=S[4]&P[4];
-
-assign note[25]=S[0]&P_empty;
-assign note[26]=S[1]&P_empty;
-assign note[27]=S[2]&P_empty;
-assign note[28]=S[3]&P_empty;
-assign note[29]=S[4]&P_empty;
+assign note[24]=S[0]&P[4];
+assign note[25]=S[1]&P[4];
+assign note[26]=S[2]&P[4];
+assign note[27]=S[3]&P[4];
+assign note[28]=S[4]&P[4];
+assign note[29]=S[5]&P[4];
 
 
-assign note[30:31]= 2'b00;
+assign note[31:30]= 2'b00;
 endmodule
 
 
