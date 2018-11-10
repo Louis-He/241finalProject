@@ -21,7 +21,7 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 
 			   .enable(enable),
 			   .record_high(LEDR[9]),
-			   ld_selection);
+			   .ld_selection());
 
 	datapath d0(.clk(CLOCK_50),
 				.switches(SW[9:0]),
@@ -45,7 +45,7 @@ module control(
 	output enable,
 	output record_high,
 
-	output ld_selection,
+	output ld_selection
 	);
 
 	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable), .record_high(record_high));
@@ -74,7 +74,7 @@ module control(
 			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
 			S_SELECT_MODE_WAIT: begin
 				if(select == 0) begin
-					if(mode == 2'd0): begin
+					if(mode == 2'd0) begin
 						next_state = S_RECORD_BEGIN;
 					end
 					/*
@@ -147,30 +147,126 @@ module control(
 
 endmodule
 
+////////////////////////////////Data Path/////////////////////////////// 
 module datapath(
-	input clk,
-	input [9:0] switches,
-	input resetn,
+	input mode, //mode,record (1) OR play(0)
+	input reset_address,
 	input go,
+	
+	input [4:0]S,//input from the guitar
+	input [4:0]P,
 
-	output reg [5:0] address
+	output [31:0]note, //output to the audio module
 	);
-
-	always @ (posedge clk) begin
-		if (~resetn) begin
+	
+   reg [5:0] address;
+	
+	
+	//make the address to increase when record
+	always @ (posedge go) begin
+		if (reset_address) begin
 			address <= 0;
 		end
 		else begin
-			if (go) begin
 				address <= address + 1;
 			end
 		end
 	end
+//
 
+	
+
+	reg [4:0]s,p;
+	//process of record
+	always @ (posedge clk) begin
+		if(go == 1'b1)begin
+		  if(S[0]==1)
+		     s[0]<= 1'b1;
+		  if(S[1]==1)
+		     s[1]<= 1'b1;
+		  if(S[2]==1)
+		     s[2]<= 1'b1;
+		  if(S[3]==1)
+		     s[3]<= 1'b1;
+		  if(S[4]==1)
+		     s[4]<= 1'b1;  
+
+		  if(P[0]==1)
+		     p[0]<= 1'b1;
+		  if(P[1]==1)
+		     p[1]<= 1'b1;
+		  if(P[2]==1)
+		     p[2]<= 1'b1;
+		  if(P[3]==1)
+		     p[3]<= 1'b1;
+		  if(P[4]==1)
+		     p[4]<= 1'b1; 
+		end
+	end
+//Now the [4:0]s,p store all information during go=1
+
+
+wire [31:0]Note;
+coordinates_converter C_C0(.S(s),.P(p),.note(Note));
+ram64x32 r(.data(Note), .wren(mode), .address(address), .clock(~go), .q(note));
+//when go=0, mode=1,bits are loaded to the ram
+//when go=0, mode=0,bits are read from the ram
 
 endmodule
-//  RAM 64 words x 32 bits
+////////////////////////////////End of Datapath////////////////////////////////
 
+
+
+//[4:0]S,P to coordinates converter
+module coordinates_converter(S,P,note);
+input [4:0]S,P;
+output[31:0]note;
+
+//if no P is pushed P_empty=1
+assign P_empty = (~P[0])&(~P[1])&(~P[2])&(~P[3])&(~P[4]); 
+
+assign note[0]=S[0]&P[0];
+assign note[1]=S[1]&P[0];
+assign note[2]=S[2]&P[0];
+assign note[3]=S[3]&P[0];
+assign note[4]=S[4]&P[0];
+
+assign note[5]=S[0]&P[1];
+assign note[6]=S[1]&P[1];
+assign note[7]=S[2]&P[1];
+assign note[8]=S[3]&P[1];
+assign note[9]=S[4]&P[1];
+
+assign note[10]=S[0]&P[2];
+assign note[11]=S[1]&P[2];
+assign note[12]=S[2]&P[2];
+assign note[13]=S[3]&P[2];
+assign note[14]=S[4]&P[2];
+
+assign note[15]=S[0]&P[3];
+assign note[16]=S[1]&P[3];
+assign note[17]=S[2]&P[3];
+assign note[18]=S[3]&P[3];
+assign note[19]=S[4]&P[3];
+
+assign note[20]=S[0]&P[4];
+assign note[21]=S[1]&P[4];
+assign note[22]=S[2]&P[4];
+assign note[23]=S[3]&P[4];
+assign note[24]=S[4]&P[4];
+
+assign note[25]=S[0]&P_empty;
+assign note[26]=S[1]&P_empty;
+assign note[27]=S[2]&P_empty;
+assign note[28]=S[3]&P_empty;
+assign note[29]=S[4]&P_empty;
+
+
+assign note[30:31]= 2'b00;
+endmodule
+
+
+//clock_divider
 module clock_devider(
 	input clk,
 	input resetn,
