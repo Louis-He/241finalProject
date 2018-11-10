@@ -221,9 +221,9 @@ p[4:0]<=5'b0;
 end
 //
 wire [31:0]Note;
-coordinates_converter C_C0(.S(s),.P(p),.note(note));
+coordinates_converter C_C0(.S(s),.P(p),.note(Note));
 
-//ram64x32 r(.data(Note), .wren(mode), .address(address), .clock(~go), .q(note));
+ram64x32 r(.data(Note), .wren(mode), .address(address), .clock(~go), .q(note));
 //when go=0, mode=1,bits are loaded to the ram
 //when go=0, mode=0,bits are read from the ram
 
