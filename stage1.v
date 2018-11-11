@@ -168,6 +168,7 @@ module datapath(
    input clk,
 
 	input [1:0]Mode, //mode,record (01) OR play(00)//SW input from user
+	input ld_selection,
 	input go,
 	input reset_address,
 
@@ -182,16 +183,21 @@ module datapath(
 	);
 	
    //Mode seletion from user
+	always@(*)
+	begin
+	if (ld_selection==1'b1)
+	 mode<=Mode;
+	end
+	//assign wren correspond to current mode
 	reg wren;
 	always@(*)
 	begin
-	if (Mode==2'b01)
-	 mode<=2'b01;
+	if (mode==2'b01)
 	 wren<=1'b1;
-	if (Mode==2'b00)
-	 mode<=2'b00;
-	 wren<=1'b0;
+	if (mode==2'b00)
+	 wren<=1'b0; 
 	end
+	
    //current mode is stored in mode	
 
    reg [5:0] address;
