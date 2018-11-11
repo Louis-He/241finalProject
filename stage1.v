@@ -167,17 +167,32 @@ endmodule
 module datapath(
    input clk,
 
-	input mode, //mode,record (1) OR play(0)
+	input [1:0]Mode, //mode,record (01) OR play(00)//SW input from user
 	input go,
 	input reset_address,
 
 
 	input [5:0]S,//6 strings input from the guitar
-	input [4:0]P,//4 horizontal metal bar + no bar is pressed
+	input [4:0]P,//4 horizontal metal bar + (no bar is pressed)
+	             //for convenience P[4:1]represent the bar[4:1] been pressed
+					 //P[0]take no input and is the don't care term
 
-	output [31:0]note //output to the audio module
+	output [31:0]note, //output to the audio module
+	output reg [1:0]mode
 	);
-
+	
+   //Mode seletion from user
+	reg wren;
+	always@(*)
+	begin
+	if (Mode==2'b01)
+	 mode<=2'b01;
+	 wren<=1'b1;
+	if (Mode==2'b00)
+	 mode<=2'b00;
+	 wren<=1'b0;
+	end
+   //current mode is stored in mode	
 
    reg [5:0] address;
 	//make the address to increase when record
@@ -253,14 +268,15 @@ module coordinates_converter(S,P,note);
 	output[31:0]note;
 
 	//if no P is pushed P[0]=1;
-	assign P[0]=(~P[1])&(~P[2])&(~P[3])&(~P[4]);
+	wire p_0;
+	assign p_0=(~P[1])&(~P[2])&(~P[3])&(~P[4]);
 
-	assign note[0]=S[0]&P[0];
-	assign note[1]=S[1]&P[0];
-	assign note[2]=S[2]&P[0];
-	assign note[3]=S[3]&P[0];
-	assign note[4]=S[4]&P[0];
-	assign note[5]=S[5]&P[0];
+	assign note[0]=S[0]&p_0;
+	assign note[1]=S[1]&p_0;
+	assign note[2]=S[2]&p_0;
+	assign note[3]=S[3]&p_0;
+	assign note[4]=S[4]&p_0;
+	assign note[5]=S[5]&p_0;
 
 	assign note[6]=S[0]&P[1];
 	assign note[7]=S[1]&P[1];
