@@ -3,7 +3,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
-	input [17:0] GPIO_0;
+	input [19:0] GPIO_0;
 	output [9:0] LEDR;
 
 	wire resetn;
@@ -16,10 +16,9 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 	wire enable;
 	wire record_high;
 	wire record_reset;
-	wire ld_selection;
 
-	wire[5:0] strings = {{{{GPIO_0[1], GPIO_0[3]}, GPIO_0[5]}, GPIO_0[7]}, GPIO_0[9]};
-	wire[3:0] pbars = {{{GPIO_0[11], GPIO_0[13]}, GPIO_0[15]}, GPIO_0[17]};
+	wire[5:0] strings = {{{{{GPIO_0[1], GPIO_0[3]}, GPIO_0[5]}, GPIO_0[7]}, GPIO_0[9]}, GPIO_0[11]};
+	wire[4:0] pbars = {{{GPIO_0[13], GPIO_0[15]}, GPIO_0[17]}, GPIO_0[19]}; // pbars[0] : Dont Care term
 	wire[31:0] note;
 
 	control c0(.clk(CLOCK_50),
@@ -28,19 +27,18 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 			   .go(go),
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
-			   .mode(mode),
 
 			   .enable(enable),
 			   .record_high(record_high),
+			   .mode(mode),
 			   .record_reset(record_reset),
-			   .ld_selection(ld_selection),
 			   .state(LEDR[4:0]));
 
 	datapath d0(.clk(CLOCK_50),
 				.mode(mode),
-				.reset_address(resetn),
-				.ld_selection(ld_selection),
 				.go(enable),
+				.reset_address(resetn),
+
 				.S(strings),
 				.P(pbars),
 
@@ -56,13 +54,11 @@ module control(
 	input [9:0] switches,
 	input resetn,
 
-	input mode,
-
 	output enable,
 	output record_high,
 
+	output reg mode,
 	output reg record_reset,
-	output reg ld_selection,
 	output reg [4:0] state
 	);
 
@@ -81,7 +77,9 @@ module control(
 				S_RECORDING          = 5'd6,
 				S_RECORDING_WAIT     = 5'd7,
 				S_RECORD_STOP        = 5'd8,
-				S_END                = 5'd9;
+				S_END                = 5'd9,
+
+				S_WIAT_PLAY          = 5'd10;
 
 	// state_table
 	always@(*)
@@ -91,7 +89,10 @@ module control(
 			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
 			S_SELECT_MODE_WAIT: begin
 				if(select == 0) begin
-					if(mode == 2'd1) begin
+					if (switches[1:0] == 2'b0) begin
+						next_state = S_WIAT_PLAY;
+					end
+					else if(switches[1:0] == 2'b1) begin
 						next_state = S_WAIT_RECORD;
 					end
 					/*
@@ -141,22 +142,28 @@ module control(
 	// Output logic aka all of our datapath control signals
     always @(*)
     begin: enable_signals
-		ld_selection = 0;
 		record_reset = 0;
+		mode = 0;
 
 		case (current_state)
-			S_SELECT_MODE:
-				ld_selection = 1;
 			S_WAIT_RECORD_WAIT:
 				record_reset = 1;
+			S_RECORDING:
+				mode = 1;
+			S_RECORDING_WAIT:
+				mode = 1;
 		endcase
 	end
 
 	// state_FFs
     always@(posedge clk)
 	begin: state_FFs
-
-
+		if(!resetn) begin
+			current_state <= S_BEGIN;
+		end
+		else begin
+			current_state <= next_state;
+		end
 	end
 
 	// ######################## FINITE STATE MACHINE END ##############################
@@ -167,96 +174,84 @@ endmodule
 module datapath(
    input clk,
 
-	input [1:0]Mode, //mode,record (01) OR play(00)//SW input from user
-	input ld_selection,
+	input [1:0] mode, //mode,record (01) OR play(00)//SW input from user
 	input go,
 	input reset_address,
 
 
-	input [5:0]S,//6 strings input from the guitar
-	input [4:0]P,//4 horizontal metal bar + (no bar is pressed)
-	             //for convenience P[4:1]represent the bar[4:1] been pressed
-					 //P[0]take no input and is the don't care term
+	input [5:0] S,//6 strings input from the guitar
+	input [4:0] P,//4 horizontal metal bar + (no bar is pressed)
+	              //for convenience P[4:1]represent the bar[4:1] been pressed
+				  //P[0]take no input and is the don't care term
 
-	output [31:0]note, //output to the audio module
-	output reg [1:0]mode
+	output [31:0] note //output to the audio module
 	);
-	
-   //Mode seletion from user
-	always@(*)
-	begin
-	if (ld_selection==1'b1)
-	 mode<=Mode;
-	end
-	//assign wren correspond to current mode
+
+	//Mode seletion from user
 	reg wren;
-	always@(*)
-	begin
-	if (mode==2'b01)
-	 wren<=1'b1;
-	if (mode==2'b00)
-	 wren<=1'b0; 
+
+	//assign wren correspond to current mode
+	always@(*) begin
+		if (mode==2'b01)
+			wren <= 1'b1;
+		if (mode==2'b00)
+			wren <= 1'b0;
 	end
-	
-   //current mode is stored in mode	
+
+   //current mode is stored in mode
 
    reg [5:0] address;
 	//make the address to increase when record
-	always @ (posedge go)
-	begin
-		if (reset_address)
-		begin
+	always @ (posedge go) begin
+		if (reset_address) begin
 			address <= 0;
 		end
-
-		else
-		begin
+		else begin
 			address <= address + 1;
 		end
-
 	end
 //
 
-	reg [5:0]s;
-	reg [4:0]p;
+	reg [5:0] s;
+	reg [4:0] p;
 	//process of record
 	always @ (posedge clk) begin
-		if(go == 1'b1)begin
+		// Now the [4:0]s,p store all information during go=1
+		if(go) begin
 		  if(S[0]==1)
-		     s[0]<= 1'b1;
+		     s[0] <= 1'b1;
 		  if(S[1]==1)
-		     s[1]<= 1'b0;
+		     s[1] <= 1'b0;
 		  if(S[2]==1)
-		     s[2]<= 1'b1;
+		     s[2] <= 1'b1;
 		  if(S[3]==1)
-		     s[3]<= 1'b1;
+		     s[3] <= 1'b1;
 		  if(S[4]==1)
-		     s[4]<= 1'b1;
+		     s[4] <= 1'b1;
 		  if(S[5]==1)
-		     s[5]<= 1'b1;
+		     s[5] <= 1'b1;
 
 		  if((P[1]==0)&(P[2]==0)&(P[3]==0)&(P[4]==0)) //no bar is pressed
-		     p[0]<= 1'b1;
+		     p[0] <= 1'b1;
 		  if((P[1]==1)&(P[2]==0)&(P[3]==0)&(P[4]==0))
-		     p[1]<= 1'b1;
+		     p[1] <= 1'b1;
 		  if((P[2]==1)&(P[3]==0)&(P[4]==0))
-		     p[2]<= 1'b1;
+		     p[2] <= 1'b1;
 		  if((P[3]==1)&(P[4]==0))
-		     p[3]<= 1'b1;
+		     p[3] <= 1'b1;
 		  if(P[4]==1)
-		     p[4]<= 1'b1;
+		     p[4] <= 1'b1;
+		end
+		// start of next go(go is now 0),Note should be cleared
+		else begin
+			s[5:0] <= 6'b0;
+			p[4:0] <= 5'b0;
 		end
 	end
-	//Now the [4:0]s,p store all information during go=1
-	// start of next go,Note should be cleared
-	always @ (posedge go)
-	begin
-	s[5:0]<=6'b0;
-	p[4:0]<=5'b0;
-	end
+
 	//
-	wire [31:0]Note;
-	coordinates_converter C_C0(.S(s),.P(p),.note(Note));
+	wire [31:0] Note;
+	coordinates_converter C_C0(.S(s), .P(p), .note(Note));
 
 	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
 	//when go=0, mode=1,bits are loaded to the ram
