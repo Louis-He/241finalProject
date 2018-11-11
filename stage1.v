@@ -6,6 +6,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 	input [19:0] GPIO_0;
 	output [9:0] LEDR;
 
+	// board based input
 	wire resetn;
 	wire select;
 	wire back;
@@ -13,13 +14,19 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 	assign select = ~KEY[3];
 	assign back = ~KEY[2];
 
-	wire enable;
-	wire record_high;
-	wire record_reset;
+	// clock like pulse
+	wire enable; // once per note
+	wire record_high; // 1 = record, 0 = DO NOT record
 
+	// GPIO_0 input signals
 	wire[5:0] strings = {{{{{GPIO_0[1], GPIO_0[3]}, GPIO_0[5]}, GPIO_0[7]}, GPIO_0[9]}, GPIO_0[11]};
 	wire[4:0] pbars = {{{GPIO_0[13], GPIO_0[15]}, GPIO_0[17]}, GPIO_0[19]}; // pbars[0] : Dont Care term
 	wire[31:0] note;
+
+	// output signals from control
+	wire record_reset; // reset recording part
+	wire mode; // mode from user
+	wire is_play; // whether for playing sound
 
 	control c0(.clk(CLOCK_50),
 			   .back(back),
@@ -32,7 +39,10 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 			   .record_high(record_high),
 			   .mode(mode),
 			   .record_reset(record_reset),
+			   .is_play(is_play),
 			   .state(LEDR[4:0]));
+
+	assign LEDR[9] = mode;
 
 	datapath d0(.clk(CLOCK_50),
 				.mode(mode),
@@ -43,7 +53,6 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 				.P(pbars),
 
 				.note(note[31:0]));
-
 endmodule
 
 module control(
@@ -59,9 +68,10 @@ module control(
 
 	output reg mode,
 	output reg record_reset,
-	output reg [4:0] state
+	output reg is_play,
+	output [4:0] state
 	);
-
+	assign state = current_state;
 	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable), .record_high(record_high));
 
 	// ######################## FINITE STATE MACHINE ##############################
@@ -77,9 +87,16 @@ module control(
 				S_RECORDING          = 5'd6,
 				S_RECORDING_WAIT     = 5'd7,
 				S_RECORD_STOP        = 5'd8,
-				S_END                = 5'd9,
+				S_RECORD_STOP_WAIT   = 5'd9,
 
-				S_WIAT_PLAY          = 5'd10;
+				S_WAIT_PLAY          = 5'd10,
+				S_WAIT_PLAY_WAIT     = 5'd11,
+				S_PLAYING            = 5'd12,
+				S_PLAYING_WAIT       = 5'd13,
+				S_PLAY_STOP          = 5'd14,
+				S_PLAY_STOP_WAIT     = 5'd15,
+
+				S_END                = 5'd16;
 
 	// state_table
 	always@(*)
@@ -90,7 +107,7 @@ module control(
 			S_SELECT_MODE_WAIT: begin
 				if(select == 0) begin
 					if (switches[1:0] == 2'b0) begin
-						next_state = S_WIAT_PLAY;
+						next_state = S_WAIT_PLAY;
 					end
 					else if(switches[1:0] == 2'b1) begin
 						next_state = S_WAIT_RECORD;
@@ -128,14 +145,49 @@ module control(
 			S_RECORDING_WAIT: next_state = select ? S_RECORDING_WAIT : S_RECORD_STOP;
 			S_RECORD_STOP: begin
 				if (select | back) begin
-					next_state = S_END;
+					next_state = S_RECORD_STOP_WAIT;
 				end
 				else begin
 					next_state = S_RECORD_STOP;
 				end
 			end
-			S_END: next_state = S_BEGIN;
+			S_RECORD_STOP_WAIT: next_state = select ? S_RECORD_STOP_WAIT : S_END;
 			//################# RECORD MODE FSM END#################
+
+			//#################### PLAY MODE FSM ###################
+			S_WAIT_PLAY: begin
+				if (back) begin
+					next_state = S_SELECT_MODE;
+				end
+				else if (select) begin
+					next_state = S_WAIT_PLAY_WAIT;
+				end
+				else begin
+					next_state = S_WAIT_PLAY;
+				end
+			end
+			S_WAIT_PLAY_WAIT: next_state = select ? S_WAIT_PLAY_WAIT : S_PLAYING;
+			S_PLAYING: begin
+				if (select) begin
+					next_state = S_PLAYING_WAIT;
+				end
+				else begin
+					next_state = S_PLAYING;
+				end
+			end
+			S_PLAYING_WAIT: next_state = select ? S_PLAYING_WAIT : S_PLAY_STOP;
+			S_PLAY_STOP: begin
+				if (select | back) begin
+					next_state = S_PLAY_STOP_WAIT;
+				end
+				else begin
+					next_state = S_PLAY_STOP;
+				end
+			end
+			S_PLAY_STOP_WAIT: next_state = select ? S_PLAY_STOP_WAIT : S_END;
+			//################## PLAY MODE FSM END##################
+
+			S_END: next_state = S_BEGIN;
 		endcase
 	end
 
@@ -144,6 +196,7 @@ module control(
     begin: enable_signals
 		record_reset = 0;
 		mode = 0;
+		is_play = 0;
 
 		case (current_state)
 			S_WAIT_RECORD_WAIT:
@@ -152,6 +205,10 @@ module control(
 				mode = 1;
 			S_RECORDING_WAIT:
 				mode = 1;
+			S_PLAYING:
+				is_play = 1;
+			S_PLAYING_WAIT:
+				is_play = 1;
 		endcase
 	end
 
