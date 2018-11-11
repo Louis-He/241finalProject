@@ -1,8 +1,9 @@
 // stage1
-module stage1(CLOCK_50, SW, KEY, LEDR);
+module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
+	input [17:0] GPIO_0;
 	output [9:0] LEDR;
 
 	wire resetn;
@@ -16,6 +17,10 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 	wire record_high;
 	wire record_reset;
 	wire ld_selection;
+
+	wire[5:0] strings = {{{{GPIO_0[1], GPIO_0[3]}, GPIO_0[5]}, GPIO_0[7]}, GPIO_0[9]};
+	wire[3:0] pbars = {{{GPIO_0[11], GPIO_0[13]}, GPIO_0[15]}, GPIO_0[17]};
+	wire[31:0] note;
 
 	control c0(.clk(CLOCK_50),
 			   .back(back),
@@ -32,11 +37,14 @@ module stage1(CLOCK_50, SW, KEY, LEDR);
 			   .state(LEDR[4:0]));
 
 	datapath d0(.clk(CLOCK_50),
-				.switches(SW[9:0]),
-				.resetn(resetn),
+				.mode(mode),
+				.reset_address(resetn),
+				.ld_selection(ld_selection),
 				.go(enable),
+				.S(strings),
+				.P(pbars),
 
-				.address(LEDR[5:0]));
+				.note(note[31:0]));
 
 endmodule
 
@@ -182,13 +190,11 @@ module datapath(
 
 		else
 		begin
-				address <= address + 1;
+			address <= address + 1;
 		end
 
 	end
 //
-
-
 
 	reg [5:0]s;
 	reg [4:0]p;
@@ -220,20 +226,20 @@ module datapath(
 		     p[4]<= 1'b1;
 		end
 	end
-//Now the [4:0]s,p store all information during go=1
-// start of next go,Note should be cleared
-always @ (posedge go)
-begin
-s[5:0]<=6'b0;
-p[4:0]<=5'b0;
-end
-//
-wire [31:0]Note;
-coordinates_converter C_C0(.S(s),.P(p),.note(Note));
+	//Now the [4:0]s,p store all information during go=1
+	// start of next go,Note should be cleared
+	always @ (posedge go)
+	begin
+	s[5:0]<=6'b0;
+	p[4:0]<=5'b0;
+	end
+	//
+	wire [31:0]Note;
+	coordinates_converter C_C0(.S(s),.P(p),.note(Note));
 
-ram64x32 r(.data(Note), .wren(mode), .address(address), .clock(~go), .q(note));
-//when go=0, mode=1,bits are loaded to the ram
-//when go=0, mode=0,bits are read from the ram
+	ram64x32 r(.data(Note), .wren(mode), .address(address), .clock(~go), .q(note));
+	//when go=0, mode=1,bits are loaded to the ram
+	//when go=0, mode=0,bits are read from the ram
 
 endmodule
 ////////////////////////////////End of Datapath////////////////////////////////
@@ -242,50 +248,50 @@ endmodule
 
 //[4:0]S,P to coordinates converter
 module coordinates_converter(S,P,note);
-input [5:0]S;
-input [4:0]P;
-output[31:0]note;
+	input [5:0]S;
+	input [4:0]P;
+	output[31:0]note;
 
-//if no P is pushed P[0]=1;
-assign P[0]=(~P[1])&(~P[2])&(~P[3])&(~P[4]);
+	//if no P is pushed P[0]=1;
+	assign P[0]=(~P[1])&(~P[2])&(~P[3])&(~P[4]);
 
-assign note[0]=S[0]&P[0];
-assign note[1]=S[1]&P[0];
-assign note[2]=S[2]&P[0];
-assign note[3]=S[3]&P[0];
-assign note[4]=S[4]&P[0];
-assign note[5]=S[5]&P[0];
+	assign note[0]=S[0]&P[0];
+	assign note[1]=S[1]&P[0];
+	assign note[2]=S[2]&P[0];
+	assign note[3]=S[3]&P[0];
+	assign note[4]=S[4]&P[0];
+	assign note[5]=S[5]&P[0];
 
-assign note[6]=S[0]&P[1];
-assign note[7]=S[1]&P[1];
-assign note[8]=S[2]&P[1];
-assign note[9]=S[3]&P[1];
-assign note[10]=S[4]&P[1];
-assign note[11]=S[5]&P[1];
+	assign note[6]=S[0]&P[1];
+	assign note[7]=S[1]&P[1];
+	assign note[8]=S[2]&P[1];
+	assign note[9]=S[3]&P[1];
+	assign note[10]=S[4]&P[1];
+	assign note[11]=S[5]&P[1];
 
-assign note[12]=S[0]&P[2];
-assign note[13]=S[1]&P[2];
-assign note[14]=S[2]&P[2];
-assign note[15]=S[3]&P[2];
-assign note[16]=S[4]&P[2];
-assign note[17]=S[5]&P[2];
+	assign note[12]=S[0]&P[2];
+	assign note[13]=S[1]&P[2];
+	assign note[14]=S[2]&P[2];
+	assign note[15]=S[3]&P[2];
+	assign note[16]=S[4]&P[2];
+	assign note[17]=S[5]&P[2];
 
-assign note[18]=S[0]&P[3];
-assign note[19]=S[1]&P[3];
-assign note[20]=S[2]&P[3];
-assign note[21]=S[3]&P[3];
-assign note[22]=S[4]&P[3];
-assign note[23]=S[5]&P[3];
+	assign note[18]=S[0]&P[3];
+	assign note[19]=S[1]&P[3];
+	assign note[20]=S[2]&P[3];
+	assign note[21]=S[3]&P[3];
+	assign note[22]=S[4]&P[3];
+	assign note[23]=S[5]&P[3];
 
-assign note[24]=S[0]&P[4];
-assign note[25]=S[1]&P[4];
-assign note[26]=S[2]&P[4];
-assign note[27]=S[3]&P[4];
-assign note[28]=S[4]&P[4];
-assign note[29]=S[5]&P[4];
+	assign note[24]=S[0]&P[4];
+	assign note[25]=S[1]&P[4];
+	assign note[26]=S[2]&P[4];
+	assign note[27]=S[3]&P[4];
+	assign note[28]=S[4]&P[4];
+	assign note[29]=S[5]&P[4];
 
 
-assign note[31:30]= 2'b00;
+	assign note[31:30]= 2'b00;
 endmodule
 
 
