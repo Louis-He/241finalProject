@@ -331,19 +331,12 @@ module datapath(
 			s[5:0] <= 6'b0;
 			p[4:0] <= 5'b0;
 		end
-	end
-
-
-	//wren to the ram depends on is_record and is play
-	reg wren;
-
-	//assign wren correspond to current mode
-	always@(posedge clk) begin
 		if (is_record==1'b1)//when recoding
 			wren <= 1'b1;
 		if (is_record==1'b0)//finish recording
 			wren <= 1'b0;
 	end
+
 
 	//
 	wire [31:0] Note,note;
@@ -362,16 +355,7 @@ module datapath(
 		if (is_play==1'b1)//when replay
 			note_out=note;
 		if((is_record==1'b0)&(is_play==1'b0))
-<<<<<<< HEAD
 		   note_out=32'b0;
-=======
-		if (is_record == 1'b1)//when recoding
-			note_out = note;
-		if (is_play == 1'b1)//when replay
-			note_out = note;
-		if((is_record == 1'b0) & (is_play == 1'b0))
-		   	note_out = 32'b0;
->>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 	end
 
 endmodule
@@ -422,7 +406,6 @@ module coordinates_converter(S,P,note);
 	assign note[28]=S[4]&P[4];
 	assign note[29]=S[5]&P[4];
 
-
 	assign note[31:30]= 2'b00;
 endmodule
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -454,25 +437,25 @@ module note_to_hex(note_out, hex_digit1, hex_digit2);
 		endcase
 always @(*)
         case (note_out[31:16])
-           16'b0000000000000001: hex_digit1 = 4'h0;
-			  16'b0000000000000010: hex_digit1 = 4'h1;
-			  16'b0000000000000100: hex_digit1 = 4'h2;
-			  16'b0000000000001000: hex_digit1 = 4'h3;
+           16'b0000000000000001: hex_digit2 = 4'h0;
+			  16'b0000000000000010: hex_digit2 = 4'h1;
+			  16'b0000000000000100: hex_digit2 = 4'h2;
+			  16'b0000000000001000: hex_digit2 = 4'h3;
 
-			  16'b0000000000010000: hex_digit1 = 4'h4;
-			  16'b0000000000100000: hex_digit1 = 4'h5;
-			  16'b0000000001000000: hex_digit1 = 4'h6;
-			  16'b0000000010000000: hex_digit1 = 4'h7;
+			  16'b0000000000010000: hex_digit2 = 4'h4;
+			  16'b0000000000100000: hex_digit2 = 4'h5;
+			  16'b0000000001000000: hex_digit2 = 4'h6;
+			  16'b0000000010000000: hex_digit2 = 4'h7;
 
-			  16'b0000000100000000: hex_digit1 = 4'h8;
-			  16'b0000001000000000: hex_digit1 = 4'h9;
-			  16'b0000010000000000: hex_digit1 = 4'hA;
-			  16'b0000100000000000: hex_digit1 = 4'hB;
+			  16'b0000000100000000: hex_digit2 = 4'h8;
+			  16'b0000001000000000: hex_digit2 = 4'h9;
+			  16'b0000010000000000: hex_digit2 = 4'hA;
+			  16'b0000100000000000: hex_digit2 = 4'hB;
 
-			  16'b0001000000000000: hex_digit1 = 4'hC;
-			  16'b0010000000000000: hex_digit1 = 4'hD;
-			  16'b0100000000000000: hex_digit1 = 4'hE;
-			  16'b1000000000000000: hex_digit1 = 4'hF;
+			  16'b0001000000000000: hex_digit2 = 4'hC;
+			  16'b0010000000000000: hex_digit2 = 4'hD;
+			  16'b0100000000000000: hex_digit2 = 4'hE;
+			  16'b1000000000000000: hex_digit2 = 4'hF;
 			  default:hex_digit2 = 4'h0;
 		endcase
 endmodule
