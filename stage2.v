@@ -49,6 +49,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 			   .state(state));
 
 	datapath d0(.clk(CLOCK_50),
+				.resetn(resetn),
 			    .is_record(is_record),
 				.is_play(is_play),
 
@@ -85,6 +86,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam VGA.BACKGROUND_IMAGE = "black.mif";
 
+	note notePic(.address(), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q());
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -146,6 +148,22 @@ module control(
 	input [9:0] switches,
 	input resetn,
 
+	// output signals for VGA
+	output ld_plot,
+	output initializeX,
+	output initializeY,
+	output incrementX,
+	output incrementY,
+	output [7:0] initialX,
+	output [6:0] initialY,
+
+	// input signals for VGA
+	input [7:0] x,
+	input [6:0] y,
+	input colour,
+	input [7:0] counterX,
+	input [6:0] counterY,
+
 	output enable,
 	output record_high,
 
@@ -165,6 +183,8 @@ module control(
 	localparam  S_BEGIN              = 5'd0,
 				S_SELECT_MODE        = 5'd1,
 				S_SELECT_MODE_WAIT   = 5'd2,
+
+				S_PLOT_BACKGROUND    = 5'd3,
 
 				S_WAIT_RECORD        = 5'd4,
 				S_WAIT_RECORD_WAIT   = 5'd5,
@@ -188,7 +208,8 @@ module control(
         case (current_state)
 			S_BEGIN: next_state = S_SELECT_MODE;
 			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
-			S_SELECT_MODE_WAIT: begin
+			S_SELECT_MODE_WAIT: next_state = S_PLOT_BACKGROUND;
+			S_PLOT_BACKGROUND: begin
 				if(select == 0) begin
 					if (switches[1:0] == 2'b0) begin
 						next_state = S_WAIT_PLAY;
@@ -203,8 +224,9 @@ module control(
 					*/
 				end
 				else
-					next_state = S_SELECT_MODE_WAIT;
+					next_state = S_PLOT_BACKGROUND;
 			end
+
 			//################### RECORD MODE FSM #################
 			S_WAIT_RECORD: begin
 				if (back) begin
@@ -321,6 +343,7 @@ endmodule
 module datapath(
    	input clk,
                     //is_record,is_play,go,reset address are required signal from control
+	input resetn,
 	input is_record, //is_record=1 record
 	input is_play,   //is_play=1 play
 
@@ -334,10 +357,20 @@ module datapath(
 				  //P[0]take no input and is the don't care term
 
 	// input signals for VGA
-	input counterX,
-	input counterY,
-	input initialX,
-	input initialY,
+	input ld_plot,
+	input initializeX,
+	input initializeY,
+	input incrementX,
+	input incrementY,
+	input [7:0] initialX,
+	input [6:0] initialY,
+
+	// output signals for VGA
+	output [7:0] x,
+	output [6:0] y,
+	output colour,
+	output reg [7:0] counterX,
+	output reg [6:0] counterY,
 
 	output reg [31:0] note_out, //output to the audio module
 	output reg [5:0] address
@@ -361,41 +394,47 @@ module datapath(
 
 	//process of record
 	always @ (posedge clk) begin
-		// Now the [4:0]s,p store all information during go=1
-		if(go) begin
-		  if(S[0]==1)
-		     s[0] <= 1'b1;
-		  if(S[1]==1)
-		     s[1] <= 1'b1;
-		  if(S[2]==1)
-		     s[2] <= 1'b1;
-		  if(S[3]==1)
-		     s[3] <= 1'b1;
-		  if(S[4]==1)
-		     s[4] <= 1'b1;
-		  if(S[5]==1)
-		     s[5] <= 1'b1;
-
-		  if((P[1]==0)&(P[2]==0)&(P[3]==0)&(P[4]==0)) //no bar is pressed
-		     p[0] <= 1'b1;
-		  else if((P[1]==1)&(P[2]==0)&(P[3]==0)&(P[4]==0))
-		     p[1] <= 1'b1;
-		  else if((P[2]==1)&(P[3]==0)&(P[4]==0))
-		     p[2] <= 1'b1;
-		  else if((P[3]==1)&(P[4]==0))
-		     p[3] <= 1'b1;
-		  else if(P[4]==1)
-		     p[4] <= 1'b1;
+		if(~resetn) begin
+			counterX <= 0;
+			counterY <= 0;
 		end
-		// start of next go(go is now 0),Note should be cleared
 		else begin
-			s[5:0] <= 6'b0;
-			p[4:0] <= 5'b0;
+			// Now the [4:0]s,p store all information during go=1
+			if(go) begin
+			  if(S[0]==1)
+			     s[0] <= 1'b1;
+			  if(S[1]==1)
+			     s[1] <= 1'b1;
+			  if(S[2]==1)
+			     s[2] <= 1'b1;
+			  if(S[3]==1)
+			     s[3] <= 1'b1;
+			  if(S[4]==1)
+			     s[4] <= 1'b1;
+			  if(S[5]==1)
+			     s[5] <= 1'b1;
+
+			  if((P[1]==0)&(P[2]==0)&(P[3]==0)&(P[4]==0)) //no bar is pressed
+			     p[0] <= 1'b1;
+			  else if((P[1]==1)&(P[2]==0)&(P[3]==0)&(P[4]==0))
+			     p[1] <= 1'b1;
+			  else if((P[2]==1)&(P[3]==0)&(P[4]==0))
+			     p[2] <= 1'b1;
+			  else if((P[3]==1)&(P[4]==0))
+			     p[3] <= 1'b1;
+			  else if(P[4]==1)
+			     p[4] <= 1'b1;
+			end
+			// start of next go(go is now 0),Note should be cleared
+			else begin
+				s[5:0] <= 6'b0;
+				p[4:0] <= 5'b0;
+			end
+			if (is_record==1'b1) //when recoding
+				wren <= 1'b1;
+			if (is_record==1'b0) //finish recording
+				wren <= 1'b0;
 		end
-		if (is_record==1'b1) //when recoding
-			wren <= 1'b1;
-		if (is_record==1'b0) //finish recording
-			wren <= 1'b0;
 	end
 
 	wire [31:0] Note,note;
