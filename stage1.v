@@ -58,13 +58,14 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
 				.is_play(is_play),
 
 				.go(record_high),
+				.increment_address(enable),
 				.reset_address(record_reset),
 
 				.S(strings),
 				.P(pbars),
 
 				.note_out(note[31:0]),
-				.address(LEDR[9:5]));
+				.address(LEDR[9:4]));
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -270,6 +271,7 @@ module datapath(
 	input is_play,   //is_play=1 play
 
 	input go,
+	input increment_address,
 	input reset_address,
 
 	input [5:0] S,//6 strings input from the guitar
@@ -282,12 +284,12 @@ module datapath(
 	);
 	//reg [5:0] address;
 	//make the address to increase when record
-	always @ (posedge go) begin
+	always @ (negedge increment_address) begin
 		if (reset_address) begin
-			address <= 0;
+			address <= 6'b0;
 		end
 		else begin
-			address <= address + 1;
+			address <= address + 6'b000001;
 		end
 	end
 
@@ -300,7 +302,6 @@ module datapath(
 	//process of record
 	always @ (posedge clk) begin
 		// Now the [4:0]s,p store all information during go=1
-
 		if(go) begin
 		  if(S[0]==1)
 		     s[0] <= 1'b1;
@@ -342,18 +343,20 @@ module datapath(
 	wire [31:0] Note,note;
 	coordinates_converter C_C0(.S(s), .P(p), .note(Note));
 
-   	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
+	// NOTICE: NOT GUARENTEE CORRECT
+	// previous: clock(~go)
+   	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(clk), .q(note));
 	//when go=0, is_record=1,bits are loaded to the ram
 	//when go=0, is_record=0,bits are read from the ram
 
 	//output from ram to audio
 	always@(*) begin
-		if (is_record==1'b1)//when recoding
-			note_out=note;
-		if (is_play==1'b1)//when replay
-			note_out=note;
-		if((is_record==1'b0)&(is_play==1'b0))
-		   	note_out=32'b0;
+		if (is_record == 1'b1)//when recoding
+			note_out = note;
+		if (is_play == 1'b1)//when replay
+			note_out = note;
+		if((is_record == 1'b0) & (is_play == 1'b0))
+		   	note_out = 32'b0;
 	end
 
 endmodule
@@ -412,7 +415,7 @@ endmodule
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
     output reg [3:0] hex_digit1,hex_digit2;
-	 always @(*)
+	always @(*) begin
         case (note_out[15:0])
            16'd0: hex_digit1 = 4'h0;
 			  16'd1: hex_digit1 = 4'h1;
@@ -434,8 +437,9 @@ module note_to_hex(note_out, hex_digit1, hex_digit2);
 			  16'd14: hex_digit1 = 4'hE;
 			  16'd15: hex_digit1 = 4'hF;
 		endcase
+	end
 
-			 always @(*)
+	always @(*) begin
         case (note_out[31:16])
            16'd0: hex_digit2 = 4'h0;
 			  16'd1: hex_digit2 = 4'h1;
@@ -457,6 +461,7 @@ module note_to_hex(note_out, hex_digit1, hex_digit2);
 			  16'd14: hex_digit2 = 4'hE;
 			  16'd15: hex_digit2 = 4'hF;
 		endcase
+	end
 endmodule
 
 //hex display for the note output
@@ -499,7 +504,7 @@ module clock_devider(
 	reg [26:0] counter; // maximun: 75,000,000
 	reg [26:0] maxCounter; // maximun: 75,000,000
 
-	assign slower_clk = (counter == 0) ? 1 : 0;
+	assign slower_clk = (counter == 27'd0) ? 1 : 0;
 	assign record_high = (counter > 27'd1000) ? 1 : 0;
 
 	// 000 : 40 nodes/min
@@ -527,13 +532,13 @@ module clock_devider(
 
 	always @ (posedge clk) begin
 		if (~resetn)
-			counter <= maxCounter - 1;
+			counter <= maxCounter - 1'b1;
 		else begin
 			if (counter == 0) begin
-				counter <= maxCounter - 1;
+				counter <= maxCounter - 1'b1;
 			end
 			else begin
-				counter <= counter - 1;
+				counter <= counter - 1'b1;
 			end
 		end
 	end
