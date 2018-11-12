@@ -57,7 +57,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
 			    .is_record(is_record),
 				.is_play(is_play),
 
-				.go(record_high),
+				.go(~record_high),
 				.reset_address(record_reset),
 
 				.S(strings),
@@ -232,6 +232,8 @@ module control(
 		is_play = 0;
 
 		case (current_state)
+			S_WAIT_RECORD:
+				record_reset = 1;     //this signal correspond to reset address
 			S_WAIT_RECORD_WAIT:
 				record_reset = 1;     //this signal correspond to reset address
 			S_RECORDING:
@@ -291,9 +293,14 @@ module datapath(
 
 	reg [5:0] s;
 	reg [4:0] p;
+
+	//wren to the ram depends on is_record and is play
+	reg wren;
+
 	//process of record
 	always @ (posedge clk) begin
 		// Now the [4:0]s,p store all information during go=1
+
 		if(go) begin
 		  if(S[0]==1)
 		     s[0] <= 1'b1;
@@ -324,14 +331,7 @@ module datapath(
 			s[5:0] <= 6'b0;
 			p[4:0] <= 5'b0;
 		end
-	end
-
-
-	//wren to the ram depends on is_record and is play
-	reg wren;
-
-	//assign wren correspond to current mode
-	always@(posedge clk) begin
+		//assign wren correspond to current mode
 		if (is_record==1'b1)//when recoding
 			wren <= 1'b1;
 		if (is_record==1'b0)//finish recording
@@ -411,10 +411,10 @@ endmodule
 //convert note output to hex
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
-    output reg [3:0] hex_digit1,hex_digit2;
+    output reg [3:0] hex_digit1, hex_digit2;
 	 always @(*)
         case (note_out[15:0])
-           16'd0: hex_digit1 = 4'h0;
+		   	  16'd0: hex_digit1 = 4'h0;
 			  16'd1: hex_digit1 = 4'h1;
 			  16'd2: hex_digit1 = 4'h2;
 			  16'd3: hex_digit1 = 4'h3;
