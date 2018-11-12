@@ -284,7 +284,7 @@ module datapath(
 	);
 	//reg [5:0] address;
 	//make the address to increase when record
-	always @ (negedge increment_address) begin
+	always @ (posedge go) begin
 		if (reset_address) begin
 			address <= 6'b0;
 		end
@@ -505,7 +505,7 @@ module clock_devider(
 	reg [26:0] maxCounter; // maximun: 75,000,000
 
 	assign slower_clk = (counter == 27'd0) ? 1 : 0;
-	assign record_high = (counter > 27'd1000) ? 1 : 0;
+	assign record_high = (counter > 27'd10000) ? 1 : 0;
 
 	// 000 : 40 nodes/min
 	// 001 : 60 nodes/min
