@@ -1,11 +1,11 @@
 // stage1
-module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1);
+module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
 	input [19:0] GPIO_0;
 	output [9:0] LEDR;
-	output [6:0] HEX0, HEX1;
+	output [6:0] HEX0, HEX1, HEX5;
 
 	// board based input
 	wire resetn;
@@ -21,16 +21,22 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1);
 
 	// GPIO_0 input signals
 	wire[5:0] strings = {{{{{GPIO_0[1], GPIO_0[3]}, GPIO_0[5]}, GPIO_0[7]}, GPIO_0[9]}, GPIO_0[11]};
-	wire[4:0] pbars = {{{GPIO_0[13], GPIO_0[15]}, GPIO_0[17]}, GPIO_0[19]}; // pbars[0] : Dont Care term
+	wire[4:0] pbars = {{{{GPIO_0[13], GPIO_0[15]}, GPIO_0[17]}, GPIO_0[19]}, 1'b0}; // pbars[0] : Dont Care term
 	wire[31:0] note;
 
-	assign LEDR[9] = GPIO_0[1];
-	assign LEDR[7] = record_high;
+	//assign LEDR[9] = GPIO_0[1];
+	//assign LEDR[7] = record_high;
 
 	// output signals from control
 	wire record_reset; // reset recording part
 	wire is_record; // wheather recording sound
 	wire is_play; // whether for playing sound
+	wire [4:0] state;
+
+	assign LEDR[0] = GPIO_0[1];
+	assign LEDR[1] = enable;
+	assign LEDR[2] = is_record;
+	assign LEDR[3] = is_play;
 
 	control c0(.clk(CLOCK_50),
 			   .back(back),
@@ -45,19 +51,20 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1);
 			   .record_reset(record_reset),
 			   .is_play(is_play),
 			   .is_record(is_record),
-			   .state(LEDR[4:0]));
+			   .state(state));
 
 	datapath d0(.clk(CLOCK_50),
 			    .is_record(is_record),
 				.is_play(is_play),
 
-				.go(enable),
-				.reset_address(resetn),
+				.go(record_high),
+				.reset_address(record_reset),
 
 				.S(strings),
 				.P(pbars),
 
-				.note_out(note[31:0]));
+				.note_out(note[31:0]),
+				.address(LEDR[9:5]));
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -73,6 +80,11 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1);
         .segments(HEX1)
         );
 
+	hex_decoder H5(
+        .hex_digit(state[3:0]),
+        .segments(HEX5)
+        );
+
 endmodule
 
 module control(
@@ -86,18 +98,18 @@ module control(
 	output enable,
 	output record_high,
 
-
 	output reg record_reset,
 	output reg is_record,
 	output reg is_play,
 	output [4:0] state
 	);
-	assign state = current_state;
-	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[2:0]), .slower_clk(enable), .record_high(record_high));
+
+	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[9:7]), .slower_clk(enable), .record_high(record_high));
 
 	// ######################## FINITE STATE MACHINE ##############################
 	reg [3:0] current_state;
 	reg [3:0] next_state;
+	assign state = current_state;
 
 	localparam  S_BEGIN              = 5'd0,
 				S_SELECT_MODE        = 5'd1,
@@ -258,15 +270,15 @@ module datapath(
 	input go,
 	input reset_address,
 
-
 	input [5:0] S,//6 strings input from the guitar
 	input [4:0] P,//4 horizontal metal bar + (no bar is pressed)
 	              //for convenience P[4:1]represent the bar[4:1] been pressed
 				  //P[0]take no input and is the don't care term
 
-	output reg[31:0] note_out //output to the audio module
+	output reg [31:0] note_out, //output to the audio module
+	output reg [5:0] address
 	);
-	reg [5:0] address;
+	//reg [5:0] address;
 	//make the address to increase when record
 	always @ (posedge go) begin
 		if (reset_address) begin
@@ -340,8 +352,8 @@ module datapath(
 			note_out=note;
 		if (is_play==1'b1)//when replay
 			note_out=note;
-		if((is_record==1'b1)&(is_record==1'b1))
-		   note_out=32'b0;
+		if((is_record==1'b0)&(is_play==1'b0))
+		   	note_out=32'b0;
 	end
 
 endmodule
@@ -484,11 +496,11 @@ module clock_devider(
 	output record_high
 	);
 
-	assign slower_clk = (counter == 0) ? 1 : 0;
-	assign record_high = (counter < maxCounter - 27'd10000) ? 1 : 0;
-
 	reg [26:0] counter; // maximun: 75,000,000
 	reg [26:0] maxCounter; // maximun: 75,000,000
+
+	assign slower_clk = (counter == 0) ? 1 : 0;
+	assign record_high = (counter > maxCounter - 27'd10000) ? 1 : 0;
 
 	// 000 : 40 nodes/min
 	// 001 : 60 nodes/min
