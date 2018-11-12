@@ -1,11 +1,11 @@
 // stage1
-module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5);
+module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX5);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
-	input [19:0] GPIO_0;
+	input [21:0] GPIO_0;
 	output [9:0] LEDR;
-	output [6:0] HEX0, HEX1, HEX5;
+	output [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5;
 
 	// board based input
 	wire resetn;
@@ -20,8 +20,8 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5);
 	wire record_high; // 1 = record, 0 = DO NOT record
 
 	// GPIO_0 input signals
-	wire[5:0] strings = {{{{{~GPIO_0[1], ~GPIO_0[3]}, ~GPIO_0[5]}, ~GPIO_0[7]}, ~GPIO_0[9]}, ~GPIO_0[11]};
-	wire[4:0] pbars = {{{{~GPIO_0[13], ~GPIO_0[15]}, ~GPIO_0[17]}, ~GPIO_0[19]}, 1'b0}; // pbars[0] : Dont Care term
+	wire[5:0] strings = {{{{{~GPIO_0[3], ~GPIO_0[5]}, ~GPIO_0[7]}, ~GPIO_0[9]}, ~GPIO_0[11]}, ~GPIO_0[13]};
+	wire[4:0] pbars = {{{{~GPIO_0[15], ~GPIO_0[17]}, ~GPIO_0[19]}, ~GPIO_0[21]}, 1'b0}; // pbars[0] : Dont Care term
 	wire[31:0] note;
 
 	//assign LEDR[9] = GPIO_0[1];
@@ -32,11 +32,6 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5);
 	wire is_record; // wheather recording sound
 	wire is_play; // whether for playing sound
 	wire [4:0] state;
-
-	assign LEDR[0] = GPIO_0[1];
-	assign LEDR[1] = enable;
-	assign LEDR[2] = is_record;
-	assign LEDR[3] = is_play;
 
 	control c0(.clk(CLOCK_50),
 			   .back(back),
@@ -64,12 +59,12 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5);
 				.P(pbars),
 
 				.note_out(note[31:0]),
-				.address(LEDR[9:4]));
+				.address());
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
   	note_to_hex n0(.note_out(note), .hex_digit1(hex_digit1), .hex_digit2(hex_digit2));
-
+	
 	hex_decoder H0(
         .hex_digit(hex_digit1[3:0]),
         .segments(HEX0)
@@ -115,7 +110,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5);
         .hex_digit(note[23:20]),
         .segments(HEX5)
         );
-	*/
+		*/
 endmodule
 
 module control(
