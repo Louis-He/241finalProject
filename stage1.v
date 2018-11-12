@@ -412,7 +412,7 @@ endmodule
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
     output reg [3:0] hex_digit1,hex_digit2;
-	 always @(*)
+	 always @(*) begin
         case (note_out[15:0])
            16'b0000000000000001: hex_digit1 = 4'h0;
 			  16'b0000000000000010: hex_digit1 = 4'h1;
@@ -435,7 +435,8 @@ module note_to_hex(note_out, hex_digit1, hex_digit2);
 			  16'b1000000000000000: hex_digit1 = 4'hF;
 			  default:hex_digit1 = 4'h0;
 		endcase
-always @(*)
+	end
+always @(*) begin
         case (note_out[31:16])
            16'b0000000000000001: hex_digit2 = 4'h0;
 			  16'b0000000000000010: hex_digit2 = 4'h1;
@@ -458,6 +459,7 @@ always @(*)
 			  16'b1000000000000000: hex_digit2 = 4'hF;
 			  default:hex_digit2 = 4'h0;
 		endcase
+end
 endmodule
 
 //hex display for the note output
