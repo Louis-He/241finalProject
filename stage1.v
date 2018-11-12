@@ -335,9 +335,9 @@ module datapath(
 			s[5:0] <= 6'b0;
 			p[4:0] <= 5'b0;
 		end
-		if (is_record==1'b1)//when recoding
+		if (is_record==1'b1) //when recoding
 			wren <= 1'b1;
-		if (is_record==1'b0)//finish recording
+		if (is_record==1'b0) //finish recording
 			wren <= 1'b0;
 	end
 
@@ -354,11 +354,11 @@ module datapath(
 
 	//output from ram to audio
 	always@(*) begin
-		if (is_record==1'b1)//when recoding
+		if (is_record == 1'b1)//when recoding
 			note_out = note;
-		if (is_play==1'b1)//when replay
+		if (is_play == 1'b1)//when replay
 			note_out = note;
-		if((is_record==1'b0)&(is_play==1'b0))
+		if((is_record == 1'b0)&(is_play == 1'b0))
 		   	note_out=32'b0;
 	end
 
@@ -418,7 +418,7 @@ module note_to_hex(note_out, hex_digit1, hex_digit2);
     output reg [3:0] hex_digit1,hex_digit2;
 	 always @(*) begin
         case (note_out[15:0])
-           16'b0000000000000001: hex_digit1 = 4'h0;
+           	  16'b0000000000000001: hex_digit1 = 4'h0;
 			  16'b0000000000000010: hex_digit1 = 4'h1;
 			  16'b0000000000000100: hex_digit1 = 4'h2;
 			  16'b0000000000001000: hex_digit1 = 4'h3;
@@ -442,7 +442,7 @@ module note_to_hex(note_out, hex_digit1, hex_digit2);
 	end
 always @(*) begin
         case (note_out[31:16])
-           16'b0000000000000001: hex_digit2 = 4'h0;
+           	  16'b0000000000000001: hex_digit2 = 4'h0;
 			  16'b0000000000000010: hex_digit2 = 4'h1;
 			  16'b0000000000000100: hex_digit2 = 4'h2;
 			  16'b0000000000001000: hex_digit2 = 4'h3;
@@ -500,14 +500,14 @@ module clock_devider(
 	input resetn,
 	input [2:0] speed,
 	output slower_clk,
-	output record_high
+	output reg record_high
 	);
 
 	reg [26:0] counter; // maximun: 75,000,000
 	reg [26:0] maxCounter; // maximun: 75,000,000
 
 	assign slower_clk = (counter == 27'd0) ? 1 : 0;
-	assign record_high = (counter > 27'd10000) ? 1 : 0;
+	// assign record_high = (counter > 27'd10000) ? 1 : 0;
 
 	// 000 : 40 nodes/min
 	// 001 : 60 nodes/min
@@ -543,5 +543,10 @@ module clock_devider(
 				counter <= counter - 1'b1;
 			end
 		end
+
+		if (counter < 27'd10000)
+			record_high <= 0;
+		else
+			record_high <= 1;
 	end
 endmodule
