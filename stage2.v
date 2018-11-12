@@ -60,11 +60,36 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 
 				.note_out(note[31:0]),
 				.address());
+
+	// Create an Instance of a VGA controller - there can be only one!
+	// Define the number of colours as well as the initial background
+	// image file (.MIF) for the controller.
+	vga_adapter VGA(
+			.resetn(resetn),
+			.clock(CLOCK_50),
+			.colour(colour),
+			.x(x),
+			.y(y),
+			.plot(writeEn),
+			/* Signals for the DAC to drive the monitor. */
+			.VGA_R(VGA_R),
+			.VGA_G(VGA_G),
+			.VGA_B(VGA_B),
+			.VGA_HS(VGA_HS),
+			.VGA_VS(VGA_VS),
+			.VGA_BLANK(VGA_BLANK_N),
+			.VGA_SYNC(VGA_SYNC_N),
+			.VGA_CLK(VGA_CLK));
+		defparam VGA.RESOLUTION = "160x120";
+		defparam VGA.MONOCHROME = "FALSE";
+		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
+		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
   	note_to_hex n0(.note_out(note), .hex_digit1(hex_digit1), .hex_digit2(hex_digit2));
-	
+
 	hex_decoder H0(
         .hex_digit(hex_digit1[3:0]),
         .segments(HEX0)
@@ -308,6 +333,12 @@ module datapath(
 	              //for convenience P[4:1]represent the bar[4:1] been pressed
 				  //P[0]take no input and is the don't care term
 
+	// input signals for VGA
+	input counterX,
+	input counterY,
+	input initialX,
+	input initialY,
+
 	output reg [31:0] note_out, //output to the audio module
 	output reg [5:0] address
 	);
@@ -438,54 +469,55 @@ endmodule
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
     output reg [3:0] hex_digit1,hex_digit2;
-	 always @(*) begin
-        case (note_out[15:0])
-           	  16'b0000000000000001: hex_digit1 = 4'h0;
-			  16'b0000000000000010: hex_digit1 = 4'h1;
-			  16'b0000000000000100: hex_digit1 = 4'h2;
-			  16'b0000000000001000: hex_digit1 = 4'h3;
 
-			  16'b0000000000010000: hex_digit1 = 4'h4;
-			  16'b0000000000100000: hex_digit1 = 4'h5;
-			  16'b0000000001000000: hex_digit1 = 4'h6;
-			  16'b0000000010000000: hex_digit1 = 4'h7;
+	always @(*) begin
+    case (note_out[15:0])
+       	  16'b0000000000000001: hex_digit1 = 4'h0;
+		  16'b0000000000000010: hex_digit1 = 4'h1;
+		  16'b0000000000000100: hex_digit1 = 4'h2;
+		  16'b0000000000001000: hex_digit1 = 4'h3;
 
-			  16'b0000000100000000: hex_digit1 = 4'h8;
-			  16'b0000001000000000: hex_digit1 = 4'h9;
-			  16'b0000010000000000: hex_digit1 = 4'hA;
-			  16'b0000100000000000: hex_digit1 = 4'hB;
+		  16'b0000000000010000: hex_digit1 = 4'h4;
+		  16'b0000000000100000: hex_digit1 = 4'h5;
+		  16'b0000000001000000: hex_digit1 = 4'h6;
+		  16'b0000000010000000: hex_digit1 = 4'h7;
 
-			  16'b0001000000000000: hex_digit1 = 4'hC;
-			  16'b0010000000000000: hex_digit1 = 4'hD;
-			  16'b0100000000000000: hex_digit1 = 4'hE;
-			  16'b1000000000000000: hex_digit1 = 4'hF;
-			  default:hex_digit1 = 4'hF;
-		endcase
+		  16'b0000000100000000: hex_digit1 = 4'h8;
+		  16'b0000001000000000: hex_digit1 = 4'h9;
+		  16'b0000010000000000: hex_digit1 = 4'hA;
+		  16'b0000100000000000: hex_digit1 = 4'hB;
+
+		  16'b0001000000000000: hex_digit1 = 4'hC;
+		  16'b0010000000000000: hex_digit1 = 4'hD;
+		  16'b0100000000000000: hex_digit1 = 4'hE;
+		  16'b1000000000000000: hex_digit1 = 4'hF;
+		  default:hex_digit1 = 4'hF;
+	endcase
 	end
-always @(*) begin
-        case (note_out[31:16])
-           	  16'b0000000000000001: hex_digit2 = 4'h0;
-			  16'b0000000000000010: hex_digit2 = 4'h1;
-			  16'b0000000000000100: hex_digit2 = 4'h2;
-			  16'b0000000000001000: hex_digit2 = 4'h3;
+	always @(*) begin
+    case (note_out[31:16])
+       	  16'b0000000000000001: hex_digit2 = 4'h0;
+		  16'b0000000000000010: hex_digit2 = 4'h1;
+		  16'b0000000000000100: hex_digit2 = 4'h2;
+		  16'b0000000000001000: hex_digit2 = 4'h3;
 
-			  16'b0000000000010000: hex_digit2 = 4'h4;
-			  16'b0000000000100000: hex_digit2 = 4'h5;
-			  16'b0000000001000000: hex_digit2 = 4'h6;
-			  16'b0000000010000000: hex_digit2 = 4'h7;
+		  16'b0000000000010000: hex_digit2 = 4'h4;
+		  16'b0000000000100000: hex_digit2 = 4'h5;
+		  16'b0000000001000000: hex_digit2 = 4'h6;
+		  16'b0000000010000000: hex_digit2 = 4'h7;
 
-			  16'b0000000100000000: hex_digit2 = 4'h8;
-			  16'b0000001000000000: hex_digit2 = 4'h9;
-			  16'b0000010000000000: hex_digit2 = 4'hA;
-			  16'b0000100000000000: hex_digit2 = 4'hB;
+		  16'b0000000100000000: hex_digit2 = 4'h8;
+		  16'b0000001000000000: hex_digit2 = 4'h9;
+		  16'b0000010000000000: hex_digit2 = 4'hA;
+		  16'b0000100000000000: hex_digit2 = 4'hB;
 
-			  16'b0001000000000000: hex_digit2 = 4'hC;
-			  16'b0010000000000000: hex_digit2 = 4'hD;
-			  16'b0100000000000000: hex_digit2 = 4'hE;
-			  16'b1000000000000000: hex_digit2 = 4'hF;
-			  default:hex_digit2 = 4'hF;
-		endcase
-end
+		  16'b0001000000000000: hex_digit2 = 4'hC;
+		  16'b0010000000000000: hex_digit2 = 4'hD;
+		  16'b0100000000000000: hex_digit2 = 4'hE;
+		  16'b1000000000000000: hex_digit2 = 4'hF;
+		  default:hex_digit2 = 4'hF;
+	endcase
+	end
 endmodule
 
 //hex display for the note output

@@ -32,7 +32,7 @@ module Audio_Demo (
 // Inputs
 input				CLOCK_50;
 input		[3:0]	KEY;
-input		[3:0]	SW;
+input		[9:0]	SW;
 
 input				AUD_ADCDAT;
 
@@ -66,7 +66,7 @@ wire				write_audio_out;
 // Internal Registers
 
 reg [18:0] delay_cnt;
-reg [18;0] delay_cnt2;
+reg [18:0] delay_cnt2;
 reg [18:0] delay;
 reg [18:0] delay2;
 
@@ -85,15 +85,19 @@ reg snd2;
  *****************************************************************************/
 
 always @(posedge CLOCK_50)
+begin
 	if(delay_cnt == delay) begin
 		delay_cnt <= 0;
 		snd <= !snd;
-	end else delay_cnt <= delay_cnt + 1;
+	end
+	else delay_cnt <= delay_cnt + 1;
+
 	if(delay_cnt2 == delay2) begin
 		delay_cnt2 <= 0;
 		snd2 <= !snd2;
-	end else delay_cnt2 <= delay_cnt2 + 1;
-
+	end
+	else delay_cnt2 <= delay_cnt2 + 1;
+end
 /*****************************************************************************
  *                            Combinational Logic                            *
  *****************************************************************************/
@@ -111,11 +115,21 @@ begin
 		3'd6: delay = 18'd113636;
 		3'd7: delay = 18'd101235;
 	endcase
+	case(SW[9:6])
+		3'd0: delay = 18'd0;
+		3'd1: delay = 18'd191131;
+		3'd2: delay = 18'd170242;
+		3'd3: delay = 18'd151515;
+		3'd4: delay = 18'd131926;
+		3'd5: delay = 18'd127551;
+		3'd6: delay = 18'd113636;
+		3'd7: delay = 18'd101235;
+	endcase
 end
 
 wire [31:0] sound1 = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
 wire [31:0] sound2 = (SW == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
-wire [31:0] sound = sound1 + sound2
+wire [31:0] sound = sound1 + sound2;
 
 assign read_audio_in			= audio_in_available & audio_out_allowed;
 
