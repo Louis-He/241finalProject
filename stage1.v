@@ -1,10 +1,11 @@
 // stage1
-module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
+module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
 	input [19:0] GPIO_0;
 	output [9:0] LEDR;
+	output [6:0] HEX0, HEX1;
 
 	// board based input
 	wire resetn;
@@ -25,7 +26,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 
 	// output signals from control
 	wire record_reset; // reset recording part
-	wire mode; // mode from user
+	wire is_record; // wheather recording sound
 	wire is_play; // whether for playing sound
 
 	control c0(.clk(CLOCK_50),
@@ -37,15 +38,18 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 
 			   .enable(enable),
 			   .record_high(record_high),
-			   .mode(mode),
+			   
 			   .record_reset(record_reset),
 			   .is_play(is_play),
+				.is_record(is_record),
 			   .state(LEDR[4:0]));
 
 	assign LEDR[9] = mode;
 
 	datapath d0(.clk(CLOCK_50),
-				.mode(mode),
+			   .is_record(is_record),
+				.is_play(is_play),
+				
 				.go(enable),
 				.reset_address(resetn),
 
@@ -53,6 +57,21 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR);
 				.P(pbars),
 
 				.note(note[31:0]));
+////convert datapath output to HEX display output
+wire [3:0] hex_digit1,hex_digit2;
+  note_to_hex n0(.note_out(note), .hex_digit1, hex_digit2);
+   
+	hex_decoder H0(
+        .hex_digit(hex_digit1[3:0]), 
+        .segments(HEX0)
+        );
+        
+    hex_decoder H1(
+        .hex_digit(hex_digit2[7:4]), 
+        .segments(HEX1)
+        );
+  
+
 endmodule
 
 module control(
@@ -66,8 +85,9 @@ module control(
 	output enable,
 	output record_high,
 
-	output reg mode,
+	
 	output reg record_reset,
+	output reg is_record,
 	output reg is_play,
 	output [4:0] state
 	);
@@ -195,18 +215,18 @@ module control(
     always @(*)
     begin: enable_signals
 		record_reset = 0;
-		mode = 0;
+		is_record = 0;
 		is_play = 0;
 
 		case (current_state)
 			S_WAIT_RECORD_WAIT:
-				record_reset = 1;
+				record_reset = 1;     //this signal correspond to reset address 
 			S_RECORDING:
-				mode = 1;
+				is_record = 1;       //is_record=1 record
 			S_RECORDING_WAIT:
-				mode = 1;
+				is_record = 1;
 			S_PLAYING:
-				is_play = 1;
+				is_play = 1;         //is_play=1 play
 			S_PLAYING_WAIT:
 				is_play = 1;
 		endcase
@@ -230,8 +250,10 @@ endmodule
 ////////////////////////////////Data Path///////////////////////////////
 module datapath(
    input clk,
-
-	input [1:0] mode, //mode,record (01) OR play(00)//SW input from user
+                    //is_record,is_play,go,reset address are required signal from control
+	input is_record, //is_record=1 record
+	input is_play,   //is_play=1 play
+	
 	input go,
 	input reset_address,
 
@@ -241,21 +263,12 @@ module datapath(
 	              //for convenience P[4:1]represent the bar[4:1] been pressed
 				  //P[0]take no input and is the don't care term
 
-	output [31:0] note //output to the audio module
+	output reg[31:0] note_out //output to the audio module
 	);
 
-	//Mode seletion from user
-	reg wren;
+	
 
-	//assign wren correspond to current mode
-	always@(*) begin
-		if (mode==2'b01)
-			wren <= 1'b1;
-		if (mode==2'b00)
-			wren <= 1'b0;
-	end
-
-   //current mode is stored in mode
+ 
 
    reg [5:0] address;
 	//make the address to increase when record
@@ -306,13 +319,35 @@ module datapath(
 		end
 	end
 
-	//
-	wire [31:0] Note;
-	coordinates_converter C_C0(.S(s), .P(p), .note(Note));
+	
+	//wren to the ram depends on is_record and is play
+	reg wren;
 
-	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
-	//when go=0, mode=1,bits are loaded to the ram
-	//when go=0, mode=0,bits are read from the ram
+	//assign wren correspond to current mode
+	always@(posedge clk) begin
+		if (is_record==1'b1)//when recoding 
+			wren <= 1'b1;
+		if (is_record==1'b0)//finish recording
+			wren <= 1'b0;
+	end
+	
+	//
+	wire [31:0] Note,note;
+	coordinates_converter C_C0(.S(s), .P(p), .note(Note));
+	
+   ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
+	//when go=0, is_record=1,bits are loaded to the ram
+	//when go=0, is_record=0,bits are read from the ram
+	
+	//output from ram to audio
+	always@(*) begin
+		if (is_record==1'b1)//when recoding 
+			note_out=note;
+		if (is_play==1'b1)//when replay
+			note_out=note;
+		if((is_record==1'b1)&(is_record==1'b1))
+		   note_out=32'b0;
+	end
 
 endmodule
 ////////////////////////////////End of Datapath////////////////////////////////
@@ -367,6 +402,85 @@ module coordinates_converter(S,P,note);
 
 	assign note[31:30]= 2'b00;
 endmodule
+////////////////////////////////////////////////////////////////////////////////////////////
+//convert note output to hex
+module note_to_hex(note_out, hex_digit1, hex_digit2);
+    input [31:0] note_out;
+    output reg [3:0] hex_digit1,hex_digit2;
+	 always @(*)
+        case (note_out[15:0])
+           16'd0: hex_digit1 = 4'h0;
+			  16'd1: hex_digit1 = 4'h1;
+			  16'd2: hex_digit1 = 4'h2;
+			  16'd3: hex_digit1 = 4'h3;
+			  
+			  16'd4: hex_digit1 = 4'h4;
+			  16'd5: hex_digit1 = 4'h5;
+			  16'd6: hex_digit1 = 4'h6;
+			  16'd7: hex_digit1 = 4'h7;
+			  
+			  16'd8: hex_digit1 = 4'h8;
+			  16'd9: hex_digit1 = 4'h9;
+			  16'd10: hex_digit1 = 4'hA;
+			  16'd11: hex_digit1 = 4'hB;
+			  
+			  16'd12: hex_digit1 = 4'hC;
+			  16'd13: hex_digit1 = 4'hD;
+			  16'd14: hex_digit1 = 4'hE;
+			  16'd15: hex_digit1 = 4'hF;
+		endcase
+		
+			 always @(*)
+        case (note_out[31:16])
+           16'd0: hex_digit2 = 4'h0;
+			  16'd1: hex_digit2 = 4'h1;
+			  16'd2: hex_digit2 = 4'h2;
+			  16'd3: hex_digit2 = 4'h3;
+			  
+			  16'd4: hex_digit2 = 4'h4;
+			  16'd5: hex_digit2 = 4'h5;
+			  16'd6: hex_digit2 = 4'h6;
+			  16'd7: hex_digit2 = 4'h7;
+			  
+			  16'd8: hex_digit2 = 4'h8;
+			  16'd9: hex_digit2 = 4'h9;
+			  16'd10: hex_digit2 = 4'hA;
+			  16'd11: hex_digit2 = 4'hB;
+			  
+			  16'd12: hex_digit2 = 4'hC;
+			  16'd13: hex_digit2 = 4'hD;
+			  16'd14: hex_digit2 = 4'hE;
+			  16'd15: hex_digit2 = 4'hF;
+		endcase
+endmodule
+
+//hex display for the note output
+module hex_decoder(hex_digit, segments);
+    input [3:0] hex_digit;
+    output reg [6:0] segments;
+   
+    always @(*)
+        case (hex_digit)
+            4'h0: segments = 7'b100_0000;
+            4'h1: segments = 7'b111_1001;
+            4'h2: segments = 7'b010_0100;
+            4'h3: segments = 7'b011_0000;
+            4'h4: segments = 7'b001_1001;
+            4'h5: segments = 7'b001_0010;
+            4'h6: segments = 7'b000_0010;
+            4'h7: segments = 7'b111_1000;
+            4'h8: segments = 7'b000_0000;
+            4'h9: segments = 7'b001_1000;
+            4'hA: segments = 7'b000_1000;
+            4'hB: segments = 7'b000_0011;
+            4'hC: segments = 7'b100_0110;
+            4'hD: segments = 7'b010_0001;
+            4'hE: segments = 7'b000_0110;
+            4'hF: segments = 7'b000_1110;   
+            default: segments = 7'h7f;
+        endcase
+endmodule
+/////////////////////////////////////////////////////////////////////////////////////////
 
 
 //clock_divider
