@@ -1,5 +1,5 @@
 // stage1
-module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
+module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
@@ -20,8 +20,8 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
 	wire record_high; // 1 = record, 0 = DO NOT record
 
 	// GPIO_0 input signals
-	wire[5:0] strings = {{{{{GPIO_0[1], GPIO_0[3]}, GPIO_0[5]}, GPIO_0[7]}, GPIO_0[9]}, GPIO_0[11]};
-	wire[4:0] pbars = {{{{GPIO_0[13], GPIO_0[15]}, GPIO_0[17]}, GPIO_0[19]}, 1'b0}; // pbars[0] : Dont Care term
+	wire[5:0] strings = {{{{{~GPIO_0[1], ~GPIO_0[3]}, ~GPIO_0[5]}, ~GPIO_0[7]}, ~GPIO_0[9]}, ~GPIO_0[11]};
+	wire[4:0] pbars = {{{{~GPIO_0[13], ~GPIO_0[15]}, ~GPIO_0[17]}, ~GPIO_0[19]}, 1'b0}; // pbars[0] : Dont Care term
 	wire[31:0] note;
 
 	//assign LEDR[9] = GPIO_0[1];
@@ -85,6 +85,37 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
         .segments(HEX5)
         );
 
+	/*
+	hex_decoder H0(
+        .hex_digit(note[3:0]),
+        .segments(HEX0)
+        );
+
+    hex_decoder H1(
+        .hex_digit(note[7:4]),
+        .segments(HEX1)
+        );
+
+	hex_decoder H2(
+        .hex_digit(note[11:8]),
+        .segments(HEX2)
+        );
+
+    hex_decoder H3(
+        .hex_digit(note[15:12]),
+        .segments(HEX3)
+        );
+
+	hex_decoder H4(
+        .hex_digit(note[19:16]),
+        .segments(HEX4)
+        );
+
+	hex_decoder H5(
+        .hex_digit(note[23:20]),
+        .segments(HEX5)
+        );
+	*/
 endmodule
 
 module control(
@@ -321,13 +352,13 @@ module datapath(
 
 		  if((P[1]==0)&(P[2]==0)&(P[3]==0)&(P[4]==0)) //no bar is pressed
 		     p[0] <= 1'b1;
-		  if((P[1]==1)&(P[2]==0)&(P[3]==0)&(P[4]==0))
+		  else if((P[1]==1)&(P[2]==0)&(P[3]==0)&(P[4]==0))
 		     p[1] <= 1'b1;
-		  if((P[2]==1)&(P[3]==0)&(P[4]==0))
+		  else if((P[2]==1)&(P[3]==0)&(P[4]==0))
 		     p[2] <= 1'b1;
-		  if((P[3]==1)&(P[4]==0))
+		  else if((P[3]==1)&(P[4]==0))
 		     p[3] <= 1'b1;
-		  if(P[4]==1)
+		  else if(P[4]==1)
 		     p[4] <= 1'b1;
 		end
 		// start of next go(go is now 0),Note should be cleared
@@ -341,14 +372,10 @@ module datapath(
 			wren <= 1'b0;
 	end
 
-
-	//
 	wire [31:0] Note,note;
-	coordinates_converter C_C0(.S(s), .P(p), .note(Note));
+	coordinates_converter C_C0(.S(s), .P(p), .note(Note)); //
 
-	// NOTICE: NOT GUARENTEE CORRECT
-	// previous: clock(~go)
-   	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(clk), .q(note));
+   	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
 	//when go=0, is_record=1,bits are loaded to the ram
 	//when go=0, is_record=0,bits are read from the ram
 
@@ -359,17 +386,17 @@ module datapath(
 		if (is_play == 1'b1)//when replay
 			note_out = note;
 		if((is_record == 1'b0)&(is_play == 1'b0))
-		   	note_out=32'b0;
+		   	note_out = 32'b0;
 	end
 
 endmodule
 ////////////////////////////////End of Datapath////////////////////////////////
 
 //[4:0]S,P to coordinates converter
-module coordinates_converter(S,P,note);
-	input [5:0]S;
-	input [4:0]P;
-	output[31:0]note;
+module coordinates_converter(S, P, note);
+	input [5:0] S;
+	input [4:0] P;
+	output[31:0] note;
 
 	//if no P is pushed P[0]=1;
 	wire p_0;
@@ -410,7 +437,7 @@ module coordinates_converter(S,P,note);
 	assign note[28]=S[4]&P[4];
 	assign note[29]=S[5]&P[4];
 
-	assign note[31:30]= 2'b00;
+	assign note[31:30] = 2'b00;
 endmodule
 ////////////////////////////////////////////////////////////////////////////////////////////
 module note_to_hex(note_out, hex_digit1, hex_digit2);
@@ -437,7 +464,7 @@ module note_to_hex(note_out, hex_digit1, hex_digit2);
 			  16'b0010000000000000: hex_digit1 = 4'hD;
 			  16'b0100000000000000: hex_digit1 = 4'hE;
 			  16'b1000000000000000: hex_digit1 = 4'hF;
-			  default:hex_digit1 = 4'h0;
+			  default:hex_digit1 = 4'hF;
 		endcase
 	end
 always @(*) begin
@@ -461,7 +488,7 @@ always @(*) begin
 			  16'b0010000000000000: hex_digit2 = 4'hD;
 			  16'b0100000000000000: hex_digit2 = 4'hE;
 			  16'b1000000000000000: hex_digit2 = 4'hF;
-			  default:hex_digit2 = 4'h0;
+			  default:hex_digit2 = 4'hF;
 		endcase
 end
 endmodule
