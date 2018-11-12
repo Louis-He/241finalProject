@@ -240,6 +240,10 @@ module control(
 				is_record = 1;       //is_record=1 record
 			S_RECORDING_WAIT:
 				is_record = 1;
+			S_WAIT_PLAY:
+				record_reset = 1;
+			S_WAIT_PLAY_WAIT:
+				record_reset = 1;
 			S_PLAYING:
 				is_play = 1;         //is_play=1 play
 			S_PLAYING_WAIT:
@@ -351,11 +355,11 @@ module datapath(
 	//output from ram to audio
 	always@(*) begin
 		if (is_record==1'b1)//when recoding
-			note_out=note;
+			note_out = note;
 		if (is_play==1'b1)//when replay
-			note_out=note;
+			note_out = note;
 		if((is_record==1'b0)&(is_play==1'b0))
-		   note_out=32'b0;
+		   	note_out=32'b0;
 	end
 
 endmodule
@@ -369,7 +373,7 @@ module coordinates_converter(S,P,note);
 
 	//if no P is pushed P[0]=1;
 	wire p_0;
-	assign p_0=(~P[1])&(~P[2])&(~P[3])&(~P[4]);
+	assign p_0=((~P[1])&(~P[2])&(~P[3])&(~P[4]));
 
 	assign note[0]=S[0]&p_0;
 	assign note[1]=S[1]&p_0;
