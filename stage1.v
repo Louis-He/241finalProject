@@ -58,13 +58,21 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
 				.is_play(is_play),
 
 				.go(record_high),
+<<<<<<< HEAD
+=======
+				.increment_address(enable),
+>>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 				.reset_address(record_reset),
 
 				.S(strings),
 				.P(pbars),
 
 				.note_out(note[31:0]),
+<<<<<<< HEAD
 				.address(LEDR[9:5]));
+=======
+				.address(LEDR[9:4]));
+>>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -232,6 +240,8 @@ module control(
 		is_play = 0;
 
 		case (current_state)
+			S_WAIT_RECORD:
+				record_reset = 1;     //this signal correspond to reset address
 			S_WAIT_RECORD_WAIT:
 				record_reset = 1;     //this signal correspond to reset address
 			S_RECORDING:
@@ -268,6 +278,7 @@ module datapath(
 	input is_play,   //is_play=1 play
 
 	input go,
+	input increment_address,
 	input reset_address,
 
 	input [5:0] S,//6 strings input from the guitar
@@ -280,17 +291,21 @@ module datapath(
 	);
 	//reg [5:0] address;
 	//make the address to increase when record
-	always @ (posedge go) begin
+	always @ (negedge increment_address) begin
 		if (reset_address) begin
-			address <= 0;
+			address <= 6'b0;
 		end
 		else begin
-			address <= address + 1;
+			address <= address + 6'b000001;
 		end
 	end
 
 	reg [5:0] s;
 	reg [4:0] p;
+
+	//wren to the ram depends on is_record and is play
+	reg wren;
+
 	//process of record
 	always @ (posedge clk) begin
 		// Now the [4:0]s,p store all information during go=1
@@ -324,6 +339,7 @@ module datapath(
 			s[5:0] <= 6'b0;
 			p[4:0] <= 5'b0;
 		end
+<<<<<<< HEAD
 	end
 
 
@@ -332,6 +348,9 @@ module datapath(
 
 	//assign wren correspond to current mode
 	always@(posedge clk) begin
+=======
+		//assign wren correspond to current mode
+>>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 		if (is_record==1'b1)//when recoding
 			wren <= 1'b1;
 		if (is_record==1'b0)//finish recording
@@ -342,12 +361,19 @@ module datapath(
 	wire [31:0] Note,note;
 	coordinates_converter C_C0(.S(s), .P(p), .note(Note));
 
+<<<<<<< HEAD
    	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
+=======
+	// NOTICE: NOT GUARENTEE CORRECT
+	// previous: clock(~go)
+   	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(clk), .q(note));
+>>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 	//when go=0, is_record=1,bits are loaded to the ram
 	//when go=0, is_record=0,bits are read from the ram
 
 	//output from ram to audio
 	always@(*) begin
+<<<<<<< HEAD
 		if (is_record==1'b1)//when recoding
 			note_out=note;
 		if (is_play==1'b1)//when replay
@@ -358,6 +384,14 @@ module datapath(
 =======
 		   	note_out=32'b0;
 >>>>>>> 4863e67c927f1a3efb6d44f482e06607090fcea5
+=======
+		if (is_record == 1'b1)//when recoding
+			note_out = note;
+		if (is_play == 1'b1)//when replay
+			note_out = note;
+		if((is_record == 1'b0) & (is_play == 1'b0))
+		   	note_out = 32'b0;
+>>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 	end
 
 endmodule
@@ -412,7 +446,6 @@ module coordinates_converter(S,P,note);
 	assign note[31:30]= 2'b00;
 endmodule
 ////////////////////////////////////////////////////////////////////////////////////////////
-//convert note output to hex
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
     output reg [3:0] hex_digit1,hex_digit2;
@@ -504,8 +537,13 @@ module clock_devider(
 	reg [26:0] counter; // maximun: 75,000,000
 	reg [26:0] maxCounter; // maximun: 75,000,000
 
+<<<<<<< HEAD
 	assign slower_clk = (counter == 0) ? 1 : 0;
 	assign record_high = (counter > maxCounter - 27'd10000) ? 1 : 0;
+=======
+	assign slower_clk = (counter == 27'd0) ? 1 : 0;
+	assign record_high = (counter > 27'd1000) ? 1 : 0;
+>>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 
 	// 000 : 40 nodes/min
 	// 001 : 60 nodes/min
@@ -532,13 +570,13 @@ module clock_devider(
 
 	always @ (posedge clk) begin
 		if (~resetn)
-			counter <= maxCounter - 1;
+			counter <= maxCounter - 1'b1;
 		else begin
 			if (counter == 0) begin
-				counter <= maxCounter - 1;
+				counter <= maxCounter - 1'b1;
 			end
 			else begin
-				counter <= counter - 1;
+				counter <= counter - 1'b1;
 			end
 		end
 	end
