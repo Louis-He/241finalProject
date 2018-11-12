@@ -58,7 +58,6 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
 				.is_play(is_play),
 
 				.go(record_high),
-				.increment_address(enable),
 				.reset_address(record_reset),
 
 				.S(strings),
@@ -332,7 +331,14 @@ module datapath(
 			s[5:0] <= 6'b0;
 			p[4:0] <= 5'b0;
 		end
-		//assign wren correspond to current mode
+	end
+
+
+	//wren to the ram depends on is_record and is play
+	reg wren;
+
+	//assign wren correspond to current mode
+	always@(posedge clk) begin
 		if (is_record==1'b1)//when recoding
 			wren <= 1'b1;
 		if (is_record==1'b0)//finish recording
@@ -351,12 +357,21 @@ module datapath(
 
 	//output from ram to audio
 	always@(*) begin
+		if (is_record==1'b1)//when recoding
+			note_out=note;
+		if (is_play==1'b1)//when replay
+			note_out=note;
+		if((is_record==1'b0)&(is_play==1'b0))
+<<<<<<< HEAD
+		   note_out=32'b0;
+=======
 		if (is_record == 1'b1)//when recoding
 			note_out = note;
 		if (is_play == 1'b1)//when replay
 			note_out = note;
 		if((is_record == 1'b0) & (is_play == 1'b0))
 		   	note_out = 32'b0;
+>>>>>>> b92dcb5580f0f5fb61c74a5c1c58a2d6934a49b3
 	end
 
 endmodule
@@ -411,57 +426,55 @@ module coordinates_converter(S,P,note);
 	assign note[31:30]= 2'b00;
 endmodule
 ////////////////////////////////////////////////////////////////////////////////////////////
-//convert note output to hex
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
     output reg [3:0] hex_digit1,hex_digit2;
-	always @(*) begin
+	 always @(*)
         case (note_out[15:0])
-           16'd0: hex_digit1 = 4'h0;
-			  16'd1: hex_digit1 = 4'h1;
-			  16'd2: hex_digit1 = 4'h2;
-			  16'd3: hex_digit1 = 4'h3;
+           16'b0000000000000001: hex_digit1 = 4'h0;
+			  16'b0000000000000010: hex_digit1 = 4'h1;
+			  16'b0000000000000100: hex_digit1 = 4'h2;
+			  16'b0000000000001000: hex_digit1 = 4'h3;
 
-			  16'd4: hex_digit1 = 4'h4;
-			  16'd5: hex_digit1 = 4'h5;
-			  16'd6: hex_digit1 = 4'h6;
-			  16'd7: hex_digit1 = 4'h7;
+			  16'b0000000000010000: hex_digit1 = 4'h4;
+			  16'b0000000000100000: hex_digit1 = 4'h5;
+			  16'b0000000001000000: hex_digit1 = 4'h6;
+			  16'b0000000010000000: hex_digit1 = 4'h7;
 
-			  16'd8: hex_digit1 = 4'h8;
-			  16'd9: hex_digit1 = 4'h9;
-			  16'd10: hex_digit1 = 4'hA;
-			  16'd11: hex_digit1 = 4'hB;
+			  16'b0000000100000000: hex_digit1 = 4'h8;
+			  16'b0000001000000000: hex_digit1 = 4'h9;
+			  16'b0000010000000000: hex_digit1 = 4'hA;
+			  16'b0000100000000000: hex_digit1 = 4'hB;
 
-			  16'd12: hex_digit1 = 4'hC;
-			  16'd13: hex_digit1 = 4'hD;
-			  16'd14: hex_digit1 = 4'hE;
-			  16'd15: hex_digit1 = 4'hF;
+			  16'b0001000000000000: hex_digit1 = 4'hC;
+			  16'b0010000000000000: hex_digit1 = 4'hD;
+			  16'b0100000000000000: hex_digit1 = 4'hE;
+			  16'b1000000000000000: hex_digit1 = 4'hF;
+			  default:hex_digit1 = 4'h0;
 		endcase
-	end
-
-	always @(*) begin
+always @(*)
         case (note_out[31:16])
-           16'd0: hex_digit2 = 4'h0;
-			  16'd1: hex_digit2 = 4'h1;
-			  16'd2: hex_digit2 = 4'h2;
-			  16'd3: hex_digit2 = 4'h3;
+           16'b0000000000000001: hex_digit1 = 4'h0;
+			  16'b0000000000000010: hex_digit1 = 4'h1;
+			  16'b0000000000000100: hex_digit1 = 4'h2;
+			  16'b0000000000001000: hex_digit1 = 4'h3;
 
-			  16'd4: hex_digit2 = 4'h4;
-			  16'd5: hex_digit2 = 4'h5;
-			  16'd6: hex_digit2 = 4'h6;
-			  16'd7: hex_digit2 = 4'h7;
+			  16'b0000000000010000: hex_digit1 = 4'h4;
+			  16'b0000000000100000: hex_digit1 = 4'h5;
+			  16'b0000000001000000: hex_digit1 = 4'h6;
+			  16'b0000000010000000: hex_digit1 = 4'h7;
 
-			  16'd8: hex_digit2 = 4'h8;
-			  16'd9: hex_digit2 = 4'h9;
-			  16'd10: hex_digit2 = 4'hA;
-			  16'd11: hex_digit2 = 4'hB;
+			  16'b0000000100000000: hex_digit1 = 4'h8;
+			  16'b0000001000000000: hex_digit1 = 4'h9;
+			  16'b0000010000000000: hex_digit1 = 4'hA;
+			  16'b0000100000000000: hex_digit1 = 4'hB;
 
-			  16'd12: hex_digit2 = 4'hC;
-			  16'd13: hex_digit2 = 4'hD;
-			  16'd14: hex_digit2 = 4'hE;
-			  16'd15: hex_digit2 = 4'hF;
+			  16'b0001000000000000: hex_digit1 = 4'hC;
+			  16'b0010000000000000: hex_digit1 = 4'hD;
+			  16'b0100000000000000: hex_digit1 = 4'hE;
+			  16'b1000000000000000: hex_digit1 = 4'hF;
+			  default:hex_digit2 = 4'h0;
 		endcase
-	end
 endmodule
 
 //hex display for the note output
