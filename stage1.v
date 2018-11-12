@@ -57,7 +57,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR,HEX0,HEX1,HEX5);
 			    .is_record(is_record),
 				.is_play(is_play),
 
-				.go(~record_high),
+				.go(record_high),
 				.reset_address(record_reset),
 
 				.S(strings),
@@ -411,10 +411,10 @@ endmodule
 //convert note output to hex
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
-    output reg [3:0] hex_digit1, hex_digit2;
+    output reg [3:0] hex_digit1,hex_digit2;
 	 always @(*)
         case (note_out[15:0])
-		   	  16'd0: hex_digit1 = 4'h0;
+           16'd0: hex_digit1 = 4'h0;
 			  16'd1: hex_digit1 = 4'h1;
 			  16'd2: hex_digit1 = 4'h2;
 			  16'd3: hex_digit1 = 4'h3;
@@ -500,7 +500,7 @@ module clock_devider(
 	reg [26:0] maxCounter; // maximun: 75,000,000
 
 	assign slower_clk = (counter == 0) ? 1 : 0;
-	assign record_high = (counter > maxCounter - 27'd10000) ? 1 : 0;
+	assign record_high = (counter > 27'd1000) ? 1 : 0;
 
 	// 000 : 40 nodes/min
 	// 001 : 60 nodes/min
