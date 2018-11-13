@@ -1,11 +1,28 @@
 // stage1
-module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX5);
+module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   						//	VGA Clock
+		VGA_HS,							//	VGA H_SYNC
+		VGA_VS,							//	VGA V_SYNC
+		VGA_BLANK_N,					//	VGA BLANK
+		VGA_SYNC_N,						//	VGA SYNC
+		VGA_R,   						//	VGA Red[9:0]
+		VGA_G,	 						//	VGA Green[9:0]
+		VGA_B);   						//	VGA Blue[9:0]);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
 	input [21:0] GPIO_0;
 	output [9:0] LEDR;
-	output [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5;
+	output [6:0] HEX0, HEX1, HEX5;
+	// Do not change the following outputs
+	output			VGA_CLK;   				//	VGA Clock
+	output			VGA_HS;					//	VGA H_SYNC
+	output			VGA_VS;					//	VGA V_SYNC
+	output			VGA_BLANK_N;				//	VGA BLANK
+	output			VGA_SYNC_N;				//	VGA SYNC
+	output	[7:0]	VGA_R;   				//	VGA Red[7:0] Changed from 10 to 8-bit DAC
+	output	[7:0]	VGA_G;	 				//	VGA Green[7:0]
+	output	[7:0]	VGA_B;   				//	VGA Blue[7:0]
+
 
 	// board based input
 	wire resetn;
@@ -24,14 +41,28 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 	wire[4:0] pbars = {{{{~GPIO_0[15], ~GPIO_0[17]}, ~GPIO_0[19]}, ~GPIO_0[21]}, 1'b0}; // pbars[0] : Dont Care term
 	wire[31:0] note;
 
-	//assign LEDR[9] = GPIO_0[1];
-	//assign LEDR[7] = record_high;
-
 	// output signals from control
 	wire record_reset; // reset recording part
 	wire is_record; // wheather recording sound
 	wire is_play; // whether for playing sound
 	wire [4:0] state;
+
+	// signals and wires for VGA
+	wire ld_plot;
+	wire initializeX;
+	wire initializeY;
+	wire incrementX;
+	wire incrementY;
+	wire [7:0] initialX;
+	wire [6:0] initialY;
+	wire [7:0] counterX;
+	wire [6:0] counterY;
+	wire [7:0] x;
+	wire [6:0] y;
+	wire [2:0] colour;
+	wire [14:0] draw_address;
+
+	assign LEDR[9:0] = draw_address;
 
 	control c0(.clk(CLOCK_50),
 			   .back(back),
@@ -39,6 +70,17 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 			   .go(go),
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
+
+			   .ld_plot(ld_plot),
+		   	   .initializeX(initializeX),
+			   .initializeY(initializeY),
+		   	   .incrementX(incrementX),
+		   	   .incrementY(incrementY),
+		   	   .initialX(initialX),
+		   	   .initialY(initialY),
+
+			   .counterX(counterX),
+			   .counterY(counterY),
 
 			   .enable(enable),
 			   .record_high(record_high),
@@ -59,6 +101,20 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 				.S(strings),
 				.P(pbars),
 
+				.ld_plot(ld_plot),
+ 		   	    .initializeX(initializeX),
+ 			    .initializeY(initializeY),
+ 		   	    .incrementX(incrementX),
+ 		   	    .incrementY(incrementY),
+ 		   	    .initialX(initialX),
+ 		   	    .initialY(initialY),
+
+				.x(x),
+				.y(y),
+				.counterX(counterX),
+ 			    .counterY(counterY),
+				.draw_address(draw_address),
+
 				.note_out(note[31:0]),
 				.address());
 
@@ -71,7 +127,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 			.colour(colour),
 			.x(x),
 			.y(y),
-			.plot(writeEn),
+			.plot(ld_plot),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),
 			.VGA_G(VGA_G),
@@ -86,7 +142,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX2, HEX3, HEX4, HEX
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam VGA.BACKGROUND_IMAGE = "black.mif";
 
-	note notePic(.address(), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q());
+	note_background notePic(.address(draw_address), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q(colour));
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -148,21 +204,18 @@ module control(
 	input [9:0] switches,
 	input resetn,
 
-	// output signals for VGA
-	output ld_plot,
-	output initializeX,
-	output initializeY,
-	output incrementX,
-	output incrementY,
-	output [7:0] initialX,
-	output [6:0] initialY,
-
 	// input signals for VGA
-	input [7:0] x,
-	input [6:0] y,
-	input colour,
 	input [7:0] counterX,
 	input [6:0] counterY,
+
+	// output signals for VGA
+	output reg ld_plot,
+	output reg initializeX,
+	output reg initializeY,
+	output reg incrementX,
+	output reg incrementY,
+	output reg [7:0] initialX,
+	output reg [6:0] initialY,
 
 	output enable,
 	output record_high,
@@ -210,23 +263,26 @@ module control(
 			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
 			S_SELECT_MODE_WAIT: next_state = S_PLOT_BACKGROUND;
 			S_PLOT_BACKGROUND: begin
-				if(select == 0) begin
-					if (switches[1:0] == 2'b0) begin
-						next_state = S_WAIT_PLAY;
-					end
-					else if(switches[1:0] == 2'b1) begin
-						next_state = S_WAIT_RECORD;
-					end
-					/*
-					else if (condition) begin
+				if(counterX == 8'd160 & counterY == 7'd120 ) begin
+					if(select == 0) begin
+						if (switches[1:0] == 2'b0) begin
+							next_state = S_WAIT_PLAY;
+						end
+						else if(switches[1:0] == 2'b1) begin
+							next_state = S_WAIT_RECORD;
+						end
+						/*
+						else if (condition) begin
 
+						end
+						*/
+						else
+							next_state = S_PLOT_BACKGROUND;
 					end
-					*/
 				end
 				else
 					next_state = S_PLOT_BACKGROUND;
 			end
-
 			//################### RECORD MODE FSM #################
 			S_WAIT_RECORD: begin
 				if (back) begin
@@ -298,13 +354,31 @@ module control(
 	end
 
 	// Output logic aka all of our datapath control signals
-    always @(*)
+    always@(*)
     begin: enable_signals
 		record_reset = 0;
 		is_record = 0;
 		is_play = 0;
+		ld_plot = 0;
+		initializeX = 0;
+		initializeY = 0;
+		incrementX = 0;
+		incrementY = 0;
+		initialX = 8'b00000000;
+		initialY = 7'b0000000;
 
 		case (current_state)
+			S_PLOT_BACKGROUND: begin
+				ld_plot = 1'b1;
+				initialX = 8'b00000000;
+				initialY = 7'b0000000;
+				if(counterX < 8'd159)
+					incrementX = 1;
+				else if(counterY < 7'd120) begin
+					initializeX = 1;
+					incrementY = 1;
+				end
+			end
 			S_WAIT_RECORD:
 				record_reset = 1;     //this signal correspond to reset address
 			S_WAIT_RECORD_WAIT:
@@ -366,11 +440,11 @@ module datapath(
 	input [6:0] initialY,
 
 	// output signals for VGA
-	output [7:0] x,
-	output [6:0] y,
-	output colour,
+	output reg [7:0] x,
+	output reg [6:0] y,
 	output reg [7:0] counterX,
 	output reg [6:0] counterY,
+	output reg [14:0] draw_address,
 
 	output reg [31:0] note_out, //output to the audio module
 	output reg [5:0] address
@@ -395,8 +469,11 @@ module datapath(
 	//process of record
 	always @ (posedge clk) begin
 		if(~resetn) begin
-			counterX <= 0;
-			counterY <= 0;
+			counterX <= 8'b0;
+			x <= initialX;
+			counterY <= 7'b0;
+			y <= initialY;
+			draw_address <= 15'b0 + 15'b1;
 		end
 		else begin
 			// Now the [4:0]s,p store all information during go=1
@@ -430,10 +507,38 @@ module datapath(
 				s[5:0] <= 6'b0;
 				p[4:0] <= 5'b0;
 			end
+
 			if (is_record==1'b1) //when recoding
 				wren <= 1'b1;
 			if (is_record==1'b0) //finish recording
 				wren <= 1'b0;
+
+			// VGA if statements
+			if (ld_plot) begin
+				draw_address <= draw_address + 1;
+			end
+			else begin
+				draw_address <= 15'b0 - 1;
+				x <= initialX;
+				y <= initialY;
+			end
+
+			if (initializeX) begin
+				x <= initialX;
+				counterX <= 0;
+			end
+			if (initializeY) begin
+				y <= initialY;
+				counterY <= 0;
+			end
+			if (incrementX) begin
+				x <= x + 1;
+				counterX <= counterX + 1;
+			end
+			if (incrementY) begin
+				y <= y + 1;
+				counterY <= counterY + 1;
+			end
 		end
 	end
 
