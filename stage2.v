@@ -48,7 +48,12 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 	wire [4:0] state;
 
 	// signals and wires for VGA
+	wire [2:0] colour_out_note_background; // from register
+
+	wire clearAllCounter;
+	wire [3:0] ld_pic_NO;
 	wire ld_plot;
+	wire is_black;
 	wire initializeX;
 	wire initializeY;
 	wire incrementX;
@@ -71,7 +76,10 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
 
+			   .clearAllCounter(clearAllCounter),
+			   .ld_pic_NO(ld_pic_NO),
 			   .ld_plot(ld_plot),
+			   .is_black(is_black),
 		   	   .initializeX(initializeX),
 			   .initializeY(initializeY),
 		   	   .incrementX(incrementX),
@@ -101,7 +109,11 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 				.S(strings),
 				.P(pbars),
 
+				.colour_in_note_background(colour_out_note_background),
+				.clearAllCounter(clearAllCounter),
+				.ld_pic_NO(ld_pic_NO),
 				.ld_plot(ld_plot),
+				.is_black(is_black),
  		   	    .initializeX(initializeX),
  			    .initializeY(initializeY),
  		   	    .incrementX(incrementX),
@@ -114,6 +126,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 				.counterX(counterX),
  			    .counterY(counterY),
 				.draw_address(draw_address),
+				.colour(colour),
 
 				.note_out(note[31:0]),
 				.address());
@@ -142,7 +155,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam VGA.BACKGROUND_IMAGE = "black.mif";
 
-	note_background notePic(.address(draw_address), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q(colour));
+	note_background notePic(.address(draw_address), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q(colour_out_note_background));
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -209,7 +222,10 @@ module control(
 	input [6:0] counterY,
 
 	// output signals for VGA
+	output reg clearAllCounter,
+	output reg [3:0] ld_pic_NO,
 	output reg ld_plot,
+	output reg is_black,
 	output reg initializeX,
 	output reg initializeY,
 	output reg incrementX,
@@ -233,36 +249,47 @@ module control(
 	reg [3:0] next_state;
 	assign state = current_state;
 
-	localparam  S_BEGIN              = 5'd0,
-				S_SELECT_MODE        = 5'd1,
-				S_SELECT_MODE_WAIT   = 5'd2,
+	localparam  S_BEGIN                     = 5'd0,
+			    S_PLOT_BACKGROUND_CLEAR     = 5'd1,
+				S_PLOT_BACKGROUND           = 5'd2,
+				S_SELECT_MODE               = 5'd3,
+				S_SELECT_MODE_WAIT          = 5'd4,
 
-				S_PLOT_BACKGROUND    = 5'd3,
+				S_PLOT_NOTEBACKGROUND_CLEAR = 5'd5,
+				S_PLOT_NOTEBACKGROUND       = 5'd6,
 
-				S_WAIT_RECORD        = 5'd4,
-				S_WAIT_RECORD_WAIT   = 5'd5,
-				S_RECORDING          = 5'd6,
-				S_RECORDING_WAIT     = 5'd7,
-				S_RECORD_STOP        = 5'd8,
-				S_RECORD_STOP_WAIT   = 5'd9,
+				S_WAIT_RECORD               = 5'd7,
+				S_WAIT_RECORD_WAIT          = 5'd8,
+				S_RECORDING                 = 5'd9,
+				S_RECORDING_WAIT            = 5'd10,
+				S_RECORD_STOP               = 5'd11,
+				S_RECORD_STOP_WAIT          = 5'd12,
 
-				S_WAIT_PLAY          = 5'd10,
-				S_WAIT_PLAY_WAIT     = 5'd11,
-				S_PLAYING            = 5'd12,
-				S_PLAYING_WAIT       = 5'd13,
-				S_PLAY_STOP          = 5'd14,
-				S_PLAY_STOP_WAIT     = 5'd15,
+				S_WAIT_PLAY                 = 5'd13,
+				S_WAIT_PLAY_WAIT            = 5'd14,
+				S_PLAYING                   = 5'd15,
+				S_PLAYING_WAIT              = 5'd16,
+				S_PLAY_STOP                 = 5'd17,
+				S_PLAY_STOP_WAIT            = 5'd18,
 
-				S_END                = 5'd16;
+				S_END                       = 5'd19;
 
 	// state_table
 	always@(*)
     begin: state_table
         case (current_state)
-			S_BEGIN: next_state = S_SELECT_MODE;
-			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
-			S_SELECT_MODE_WAIT: next_state = S_PLOT_BACKGROUND;
+			S_BEGIN: next_state = S_PLOT_BACKGROUND_CLEAR;
+			S_PLOT_BACKGROUND_CLEAR: next_state = S_PLOT_BACKGROUND;
 			S_PLOT_BACKGROUND: begin
+				if(counterX == 8'd160 & counterY == 7'd120)
+					next_state = S_SELECT_MODE;
+				else
+					next_state = S_PLOT_BACKGROUND;
+			end
+			S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
+			S_SELECT_MODE_WAIT: next_state = S_PLOT_BACKGROUND_CLEAR;
+			S_PLOT_NOTEBACKGROUND_CLEAR: next_state = S_PLOT_NOTEBACKGROUND;
+			S_PLOT_NOTEBACKGROUND: begin
 				if(counterX == 8'd160 & counterY == 7'd120 ) begin
 					if(select == 0) begin
 						if (switches[1:0] == 2'b0) begin
@@ -277,12 +304,13 @@ module control(
 						end
 						*/
 						else
-							next_state = S_PLOT_BACKGROUND;
+							next_state = S_PLOT_NOTEBACKGROUND;
 					end
 				end
 				else
-					next_state = S_PLOT_BACKGROUND;
+					next_state = S_PLOT_NOTEBACKGROUND;
 			end
+
 			//################### RECORD MODE FSM #################
 			S_WAIT_RECORD: begin
 				if (back) begin
@@ -315,7 +343,6 @@ module control(
 			end
 			S_RECORD_STOP_WAIT: next_state = select ? S_RECORD_STOP_WAIT : S_END;
 			//################# RECORD MODE FSM END#################
-
 			//#################### PLAY MODE FSM ###################
 			S_WAIT_PLAY: begin
 				if (back) begin
@@ -359,7 +386,10 @@ module control(
 		record_reset = 0;
 		is_record = 0;
 		is_play = 0;
+		clearAllCounter = 0;
+		ld_pic_NO = 3'd0;
 		ld_plot = 0;
+		is_black = 0;
 		initializeX = 0;
 		initializeY = 0;
 		incrementX = 0;
@@ -368,7 +398,23 @@ module control(
 		initialY = 7'b0000000;
 
 		case (current_state)
-			S_PLOT_BACKGROUND: begin
+			S_PLOT_BACKGROUND_CLEAR:
+				clearAllCounter = 1;
+			S_PLOT_BACKGROUND:
+				ld_pic_NO = 3'd0;
+				ld_plot = 1'b1;
+				initialX = 8'b00000000;
+				initialY = 7'b0000000;
+				if(counterX < 8'd159)
+					incrementX = 1;
+				else if(counterY < 7'd120) begin
+					initializeX = 1;
+					incrementY = 1;
+				end
+			S_PLOT_NOTEBACKGROUND_CLEAR:
+				clearAllCounter = 1;
+			S_PLOT_NOTEBACKGROUND: begin
+				ld_pic_NO = 3'd1;
 				ld_plot = 1'b1;
 				initialX = 8'b00000000;
 				initialY = 7'b0000000;
@@ -413,7 +459,6 @@ module control(
 
 endmodule
 
-////////////////////////////////Data Path///////////////////////////////
 module datapath(
    	input clk,
                     //is_record,is_play,go,reset address are required signal from control
@@ -431,13 +476,17 @@ module datapath(
 				  //P[0]take no input and is the don't care term
 
 	// input signals for VGA
+	input clearAllCounter,
+	input [3:0] ld_pic_NO,
 	input ld_plot,
+	input is_black,
 	input initializeX,
 	input initializeY,
 	input incrementX,
 	input incrementY,
 	input [7:0] initialX,
 	input [6:0] initialY,
+	input [2:0] colour_in_note_background,
 
 	// output signals for VGA
 	output reg [7:0] x,
@@ -445,6 +494,7 @@ module datapath(
 	output reg [7:0] counterX,
 	output reg [6:0] counterY,
 	output reg [14:0] draw_address,
+	output reg [2:0] colour,
 
 	output reg [31:0] note_out, //output to the audio module
 	output reg [5:0] address
@@ -468,7 +518,7 @@ module datapath(
 
 	//process of record
 	always @ (posedge clk) begin
-		if(~resetn) begin
+		if(~resetn | clearAllCounter) begin
 			counterX <= 8'b0;
 			x <= initialX;
 			counterY <= 7'b0;
@@ -539,6 +589,10 @@ module datapath(
 				y <= y + 1;
 				counterY <= counterY + 1;
 			end
+			if (is_black)
+				colour <= 3'b000;
+			else if(ld_pic_NO == 3'd1)
+				colour <= colour_in_note_background;
 		end
 	end
 
@@ -560,7 +614,6 @@ module datapath(
 	end
 
 endmodule
-////////////////////////////////End of Datapath////////////////////////////////
 
 //[4:0]S,P to coordinates converter
 module coordinates_converter(S, P, note);
@@ -609,7 +662,7 @@ module coordinates_converter(S, P, note);
 
 	assign note[31:30] = 2'b00;
 endmodule
-////////////////////////////////////////////////////////////////////////////////////////////
+
 module note_to_hex(note_out, hex_digit1, hex_digit2);
     input [31:0] note_out;
     output reg [3:0] hex_digit1,hex_digit2;
@@ -690,7 +743,6 @@ module hex_decoder(hex_digit, segments);
             default: segments = 7'h7f;
         endcase
 endmodule
-/////////////////////////////////////////////////////////////////////////////////////////
 
 //clock_divider
 module clock_devider(
