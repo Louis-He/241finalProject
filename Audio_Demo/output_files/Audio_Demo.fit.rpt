@@ -1,5 +1,5 @@
 Fitter report for Audio_Demo
-Tue Nov 13 22:54:51 2018
+Wed Nov 14 10:10:16 2018
 Quartus Prime Version 18.0.0 Build 614 04/24/2018 SJ Lite Edition
 
 
@@ -65,7 +65,7 @@ refer to the applicable agreement for further details.
 +-------------------------------------------------------------------------------+
 ; Fitter Summary                                                                ;
 +---------------------------------+---------------------------------------------+
-; Fitter Status                   ; Successful - Tue Nov 13 22:54:51 2018       ;
+; Fitter Status                   ; Successful - Wed Nov 14 10:10:16 2018       ;
 ; Quartus Prime Version           ; 18.0.0 Build 614 04/24/2018 SJ Lite Edition ;
 ; Revision Name                   ; Audio_Demo                                  ;
 ; Top-level Entity Name           ; Audio_Demo                                  ;
@@ -155,14 +155,14 @@ refer to the applicable agreement for further details.
 ; Number detected on machine ; 4           ;
 ; Maximum allowed            ; 4           ;
 ;                            ;             ;
-; Average used               ; 1.04        ;
+; Average used               ; 1.06        ;
 ; Maximum used               ; 4           ;
 ;                            ;             ;
 ; Usage by Processor         ; % Time Used ;
 ;     Processor 1            ; 100.0%      ;
-;     Processor 2            ;   1.8%      ;
-;     Processor 3            ;   1.2%      ;
-;     Processor 4            ;   1.1%      ;
+;     Processor 2            ;   2.6%      ;
+;     Processor 3            ;   1.9%      ;
+;     Processor 4            ;   1.8%      ;
 +----------------------------+-------------+
 
 
@@ -223,7 +223,7 @@ refer to the applicable agreement for further details.
 +--------------+
 ; Pin-Out File ;
 +--------------+
-The pin-out file can be found in C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/output_files/Audio_Demo.pin.
+The pin-out file can be found in C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/output_files/Audio_Demo.pin.
 
 
 +-------------------------------------------------------------------------------------------+
@@ -2577,7 +2577,7 @@ Info (20030): Parallel compilation is enabled and will use 4 of the 4 processors
 Info (119006): Selected device 5CSEMA5F31C6 for design "Audio_Demo"
 Info (21077): Low junction temperature is 0 degrees C
 Info (21077): High junction temperature is 85 degrees C
-Warning: RST port on the PLL is not properly connected on instance Audio_Controller:Audio_Controller|Audio_Clock:Audio_Clock|altpll:altpll_component|Audio_Clock_altpll:auto_generated|generic_pll1. The reset port on the PLL should be connected. If the PLL loses lock for any reason, you might need to manually reset the PLL in order to re-establish lock to the reference clock. File: C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/db/audio_clock_altpll.v Line: 62
+Warning: RST port on the PLL is not properly connected on instance Audio_Controller:Audio_Controller|Audio_Clock:Audio_Clock|altpll:altpll_component|Audio_Clock_altpll:auto_generated|generic_pll1. The reset port on the PLL should be connected. If the PLL loses lock for any reason, you might need to manually reset the PLL in order to re-establish lock to the reference clock. File: C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/db/audio_clock_altpll.v Line: 62
     Info: Must be connected
 Warning (21300): LOCKED port on the PLL is not properly connected on instance "Audio_Controller:Audio_Controller|Audio_Clock:Audio_Clock|altpll:altpll_component|Audio_Clock_altpll:auto_generated|generic_pll1". The LOCKED port on the PLL should be connected when the FBOUTCLK port is connected. Although it is unnecessary to connect the LOCKED signal, any logic driven off of an output clock of the PLL will not know when the PLL is locked and ready.
 Info (171003): Fitter is performing an Auto Fit compilation, which may decrease Fitter effort to reduce compilation time
@@ -2606,40 +2606,40 @@ Info (332130): Timing requirements not specified -- quality metrics such as perf
 Info (176233): Starting register packing
 Info (176235): Finished register packing
     Extra Info (176219): No registers were packed into other blocks
-Info (11798): Fitter preparation operations ending: elapsed time is 00:00:54
+Info (11798): Fitter preparation operations ending: elapsed time is 00:00:52
 Info (170189): Fitter placement preparation operations beginning
 Info (14951): The Fitter is using Advanced Physical Optimization.
-Info (170190): Fitter placement preparation operations ending: elapsed time is 00:00:14
+Info (170190): Fitter placement preparation operations ending: elapsed time is 00:00:11
 Info (170191): Fitter placement operations beginning
 Info (170137): Fitter placement was successful
-Info (170192): Fitter placement operations ending: elapsed time is 00:00:09
+Info (170192): Fitter placement operations ending: elapsed time is 00:00:13
 Info (170193): Fitter routing operations beginning
 Info (170195): Router estimated average interconnect usage is 0% of the available device resources
     Info (170196): Router estimated peak interconnect usage is 8% of the available device resources in the region that extends from location X11_Y0 to location X21_Y10
 Info (170199): The Fitter performed an Auto Fit compilation.  Optimizations were skipped to reduce compilation time.
     Info (170201): Optimizations that may affect the design's routability were skipped
-Info (170194): Fitter routing operations ending: elapsed time is 00:00:08
-Info (11888): Total time spent on timing analysis during the Fitter is 4.26 seconds.
+Info (170194): Fitter routing operations ending: elapsed time is 00:00:19
+Info (11888): Total time spent on timing analysis during the Fitter is 5.47 seconds.
 Info (334003): Started post-fitting delay annotation
 Info (334004): Delay annotation completed successfully
 Info (334003): Started post-fitting delay annotation
 Info (334004): Delay annotation completed successfully
-Info (11801): Fitter post-fit operations ending: elapsed time is 00:00:05
+Info (11801): Fitter post-fit operations ending: elapsed time is 00:00:16
 Warning (169064): Following 3 pins have no output enable or a GND or VCC output enable - later changes to this connectivity may change fitting results
-    Info (169065): Pin AUD_BCLK has a permanently disabled output enable File: C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/Audio_Demo.v Line: 41
-    Info (169065): Pin AUD_ADCLRCK has a permanently disabled output enable File: C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/Audio_Demo.v Line: 42
-    Info (169065): Pin AUD_DACLRCK has a permanently disabled output enable File: C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/Audio_Demo.v Line: 43
-Info (144001): Generated suppressed messages file C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/output_files/Audio_Demo.fit.smsg
+    Info (169065): Pin AUD_BCLK has a permanently disabled output enable File: C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/Audio_Demo.v Line: 41
+    Info (169065): Pin AUD_ADCLRCK has a permanently disabled output enable File: C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/Audio_Demo.v Line: 42
+    Info (169065): Pin AUD_DACLRCK has a permanently disabled output enable File: C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/Audio_Demo.v Line: 43
+Info (144001): Generated suppressed messages file C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/output_files/Audio_Demo.fit.smsg
 Info: Quartus Prime Fitter was successful. 0 errors, 9 warnings
-    Info: Peak virtual memory: 6663 megabytes
-    Info: Processing ended: Tue Nov 13 22:54:52 2018
-    Info: Elapsed time: 00:02:20
-    Info: Total CPU time (on all processors): 00:03:11
+    Info: Peak virtual memory: 6669 megabytes
+    Info: Processing ended: Wed Nov 14 10:10:20 2018
+    Info: Elapsed time: 00:02:52
+    Info: Total CPU time (on all processors): 00:04:05
 
 
 +----------------------------+
 ; Fitter Suppressed Messages ;
 +----------------------------+
-The suppressed messages can be found in C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/output_files/Audio_Demo.fit.smsg.
+The suppressed messages can be found in C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/output_files/Audio_Demo.fit.smsg.
 
 

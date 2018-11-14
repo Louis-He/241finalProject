@@ -1,5 +1,5 @@
 Assembler report for Audio_Demo
-Tue Nov 13 22:55:13 2018
+Wed Nov 14 10:10:57 2018
 Quartus Prime Version 18.0.0 Build 614 04/24/2018 SJ Lite Edition
 
 
@@ -10,7 +10,7 @@ Quartus Prime Version 18.0.0 Build 614 04/24/2018 SJ Lite Edition
   2. Assembler Summary
   3. Assembler Settings
   4. Assembler Generated Files
-  5. Assembler Device Options: C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/output_files/Audio_Demo.sof
+  5. Assembler Device Options: C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/output_files/Audio_Demo.sof
   6. Assembler Messages
 
 
@@ -37,7 +37,7 @@ refer to the applicable agreement for further details.
 +---------------------------------------------------------------+
 ; Assembler Summary                                             ;
 +-----------------------+---------------------------------------+
-; Assembler Status      ; Successful - Tue Nov 13 22:55:13 2018 ;
+; Assembler Status      ; Successful - Wed Nov 14 10:10:57 2018 ;
 ; Revision Name         ; Audio_Demo                            ;
 ; Top-level Entity Name ; Audio_Demo                            ;
 ; Family                ; Cyclone V                             ;
@@ -52,23 +52,23 @@ refer to the applicable agreement for further details.
 +--------+---------+---------------+
 
 
-+---------------------------------------------------------------------------------------------------------------------------------+
-; Assembler Generated Files                                                                                                       ;
-+---------------------------------------------------------------------------------------------------------------------------------+
-; File Name                                                                                                                       ;
-+---------------------------------------------------------------------------------------------------------------------------------+
-; C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/output_files/Audio_Demo.sof ;
-+---------------------------------------------------------------------------------------------------------------------------------+
++----------------------------------------------------------------------------------------+
+; Assembler Generated Files                                                              ;
++----------------------------------------------------------------------------------------+
+; File Name                                                                              ;
++----------------------------------------------------------------------------------------+
+; C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/output_files/Audio_Demo.sof ;
++----------------------------------------------------------------------------------------+
 
 
-+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Assembler Device Options: C:/Users/think/Desktop/U of T/ECE241H1 F DIGITAL SYSTEMS/ECE 241 lab/final Project/Audio/Audio_Demo/output_files/Audio_Demo.sof ;
-+----------------+------------------------------------------------------------------------------------------------------------------------------------------+
-; Option         ; Setting                                                                                                                                  ;
-+----------------+------------------------------------------------------------------------------------------------------------------------------------------+
-; JTAG usercode  ; 0x00CE670C                                                                                                                               ;
-; Checksum       ; 0x00CE670C                                                                                                                               ;
-+----------------+------------------------------------------------------------------------------------------------------------------------------------------+
++------------------------------------------------------------------------------------------------------------------+
+; Assembler Device Options: C:/Users/think/Documents/GitHub/241finalProject/Audio_Demo/output_files/Audio_Demo.sof ;
++----------------+-------------------------------------------------------------------------------------------------+
+; Option         ; Setting                                                                                         ;
++----------------+-------------------------------------------------------------------------------------------------+
+; JTAG usercode  ; 0x00CE670C                                                                                      ;
+; Checksum       ; 0x00CE670C                                                                                      ;
++----------------+-------------------------------------------------------------------------------------------------+
 
 
 +--------------------+
@@ -77,14 +77,14 @@ refer to the applicable agreement for further details.
 Info: *******************************************************************
 Info: Running Quartus Prime Assembler
     Info: Version 18.0.0 Build 614 04/24/2018 SJ Lite Edition
-    Info: Processing started: Tue Nov 13 22:54:58 2018
+    Info: Processing started: Wed Nov 14 10:10:24 2018
 Info: Command: quartus_asm --read_settings_files=off --write_settings_files=off Audio_Demo -c Audio_Demo
 Warning (18236): Number of processors has not been specified which may cause overloading on shared machines.  Set the global assignment NUM_PARALLEL_PROCESSORS in your QSF to an appropriate value for best performance.
 Info (115030): Assembler is generating device programming files
 Info: Quartus Prime Assembler was successful. 0 errors, 1 warning
-    Info: Peak virtual memory: 4857 megabytes
-    Info: Processing ended: Tue Nov 13 22:55:13 2018
-    Info: Elapsed time: 00:00:15
-    Info: Total CPU time (on all processors): 00:00:13
+    Info: Peak virtual memory: 4865 megabytes
+    Info: Processing ended: Wed Nov 14 10:10:57 2018
+    Info: Elapsed time: 00:00:33
+    Info: Total CPU time (on all processors): 00:00:30
 
 
