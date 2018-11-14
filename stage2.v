@@ -48,7 +48,10 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 	wire [4:0] state;
 
 	// signals and wires for VGA
-	wire [2:0] colour_out_note_background; // from register
+	wire colour_out_note_background; // from RAM
+	wire [5:0] colour_out_background; // from RAM
+	wire [2:0] colour_out_arrow; // from RAM
+	wire [5:0] colour_out_singlenotePic; // from RAM
 
 	wire clearAllCounter;
 	wire [3:0] ld_pic_NO;
@@ -110,6 +113,8 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 				.P(pbars),
 
 				.colour_in_note_background(colour_out_note_background),
+				.colour_in_background(colour_out_background),
+
 				.clearAllCounter(clearAllCounter),
 				.ld_pic_NO(ld_pic_NO),
 				.ld_plot(ld_plot),
@@ -155,7 +160,12 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam VGA.BACKGROUND_IMAGE = "black.mif";
 
-	note_background notePic(.address(draw_address), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q(colour_out_note_background));
+	// VGA pictures
+	single_note singlenotePic(.address(draw_address), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q(colour_out_singlenotePic));
+	arrow arrowPic(.address(draw_address), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q(colour_out_arrow));
+	note_background notePic(.address(draw_address), .clock(CLOCK_50), .data(1'b0), .wren(1'b0), .q(colour_out_note_background));
+	background backgroundPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_background));
+
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -400,7 +410,7 @@ module control(
 		case (current_state)
 			S_PLOT_BACKGROUND_CLEAR:
 				clearAllCounter = 1;
-			S_PLOT_BACKGROUND:
+			S_PLOT_BACKGROUND: begin
 				ld_pic_NO = 3'd0;
 				ld_plot = 1'b1;
 				initialX = 8'b00000000;
@@ -411,6 +421,7 @@ module control(
 					initializeX = 1;
 					incrementY = 1;
 				end
+			end
 			S_PLOT_NOTEBACKGROUND_CLEAR:
 				clearAllCounter = 1;
 			S_PLOT_NOTEBACKGROUND: begin
@@ -486,7 +497,9 @@ module datapath(
 	input incrementY,
 	input [7:0] initialX,
 	input [6:0] initialY,
-	input [2:0] colour_in_note_background,
+
+	input colour_in_note_background,
+	input [5:0]colour_in_background,
 
 	// output signals for VGA
 	output reg [7:0] x,
@@ -591,8 +604,10 @@ module datapath(
 			end
 			if (is_black)
 				colour <= 3'b000;
+			else if(ld_pic_NO == 3'd0)
+				colour <= colour_in_background;
 			else if(ld_pic_NO == 3'd1)
-				colour <= colour_in_note_background;
+				colour <= 6{colour_in_note_background};
 		end
 	end
 
