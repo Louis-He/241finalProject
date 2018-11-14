@@ -17,7 +17,7 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 	output			VGA_CLK;   				//	VGA Clock
 	output			VGA_HS;					//	VGA H_SYNC
 	output			VGA_VS;					//	VGA V_SYNC
-	output			VGA_BLANK_N;				//	VGA BLANK
+	output			VGA_BLANK_N;			//	VGA BLANK
 	output			VGA_SYNC_N;				//	VGA SYNC
 	output	[7:0]	VGA_R;   				//	VGA Red[7:0] Changed from 10 to 8-bit DAC
 	output	[7:0]	VGA_G;	 				//	VGA Green[7:0]
@@ -184,7 +184,6 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
         .hex_digit(state[3:0]),
         .segments(HEX5)
         );
-
 	/*
 	hex_decoder H0(
         .hex_digit(note[3:0]),
@@ -254,10 +253,11 @@ module control(
 	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[9:7]), .slower_clk(enable), .record_high(record_high));
 
 	// ######################## FINITE STATE MACHINE ##############################
-	reg [3:0] current_state;
-	reg [3:0] next_state;
+	// WHOLE FSM
+	reg [4:0] current_state;
+	reg [4:0] next_state;
 	assign state = current_state;
-
+	// parameter stable_table
 	localparam  S_BEGIN                     = 5'd0,
 			    S_PLOT_BACKGROUND_CLEAR     = 5'd1,
 				S_PLOT_BACKGROUND           = 5'd2,
@@ -282,7 +282,6 @@ module control(
 				S_PLAY_STOP_WAIT            = 5'd18,
 
 				S_END                       = 5'd19;
-
 	// state_table
 	always@(*)
     begin: state_table
@@ -352,6 +351,7 @@ module control(
 			end
 			S_RECORD_STOP_WAIT: next_state = select ? S_RECORD_STOP_WAIT : S_END;
 			//################# RECORD MODE FSM END#################
+
 			//#################### PLAY MODE FSM ###################
 			S_WAIT_PLAY: begin
 				if (back) begin
@@ -389,9 +389,34 @@ module control(
 		endcase
 	end
 
+	// PLOT FSM
+	reg [3:0] plot_current_state;
+	reg [3:0] plot_next_state;
+	// parameter plot_state_table
+	localparam  P_INIT     = 4'd0;
+	localparam  P_CLEAR    = 4'd1;
+	localparam  P_PLOT     = 4'd2;
+	// plot_state_table
+	always@(*) begin: plot_state_table
+		case(plot_current_state)
+			P_INIT: plot_next_state = is_record ? P_CLEAR : P_INIT;
+			P_CLEAR: plot_next_state = P_PLOT;
+			P_PLOT: begin
+				ld_pic_NO = 3'd2;
+				ld_plot = 1'b1;
+				initialX = 8'b00000000;
+				initialY = 7'b0000000;
+				if(counterX < 8'd159)
+					incrementX = 1;
+				else if(counterY < 7'd120) begin
+					initializeX = 1;
+					incrementY = 1;
+			end
+		endcase
+	end
+
 	// Output logic aka all of our datapath control signals
-    always@(*)
-    begin: enable_signals
+    always@(*) begin: enable_signals
 		record_reset = 0;
 		is_record = 0;
 		is_play = 0;
