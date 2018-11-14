@@ -171,16 +171,15 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 
   	note_to_hex n0(.note_out(note), .hex_digit1(hex_digit1), .hex_digit2(hex_digit2));
 
+	// HEX output
 	hex_decoder H0(
         .hex_digit(hex_digit1[3:0]),
         .segments(HEX0)
         );
-
     hex_decoder H1(
         .hex_digit(hex_digit2[3:0]),
         .segments(HEX1)
         );
-
 	hex_decoder H5(
         .hex_digit(state[3:0]),
         .segments(HEX5)
@@ -607,7 +606,7 @@ module datapath(
 			else if(ld_pic_NO == 3'd0)
 				colour <= colour_in_background;
 			else if(ld_pic_NO == 3'd1)
-				colour <= 6{colour_in_note_background};
+				colour <= {6{colour_in_note_background}};
 		end
 	end
 
