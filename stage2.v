@@ -6,7 +6,19 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 		VGA_SYNC_N,						//	VGA SYNC
 		VGA_R,   						//	VGA Red[9:0]
 		VGA_G,	 						//	VGA Green[9:0]
-		VGA_B);   						//	VGA Blue[9:0]);
+		VGA_B,   						//	VGA Blue[9:0])
+		//////////////////////AUDIO//////////////////////
+		AUD_ADCDAT,
+// Bidirectionals
+   	AUD_BCLK,
+		AUD_ADCLRCK,
+		AUD_DACLRCK,
+		FPGA_I2C_SDAT,
+// Outputs
+		AUD_XCK,
+   	AUD_DACDAT,
+		FPGA_I2C_SCLK
+		);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
@@ -22,7 +34,20 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 	output	[7:0]	VGA_R;   				//	VGA Red[7:0] Changed from 10 to 8-bit DAC
 	output	[7:0]	VGA_G;	 				//	VGA Green[7:0]
 	output	[7:0]	VGA_B;   				//	VGA Blue[7:0]
+///////////////////////IN/OUTPUT FOR AUDIO//////////////////////////////
+input				AUD_ADCDAT;
 
+// Bidirectionals
+inout				AUD_BCLK;
+inout				AUD_ADCLRCK;
+inout				AUD_DACLRCK;
+inout				FPGA_I2C_SDAT;
+
+// Outputs
+output				AUD_XCK;
+output				AUD_DACDAT;
+output				FPGA_I2C_SCLK;
+///////////////////////////////////////////////////////////////////////
 
 	// board based input
 	wire resetn;
@@ -177,6 +202,30 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 	background backgroundPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_background));
 	recording recordingPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_recording));
 
+	///////////////////////////////////AUDIO DEMO MODULE///////////////////////////////
+module Audio_Demo (
+//Input From top module
+   .note_out(note[31:0]),
+// Inputs
+	.CLOCK_50(CLOCK_50),
+	.KEY(KEY),
+//	SW,
+	.AUD_ADCDAT(AUD_ADCDAT),
+
+	// Bidirectionals
+	.AUD_BCLK(AUD_BCLK),
+	.AUD_ADCLRCK(AUD_ADCLRCK),
+	.AUD_DACLRCK(AUD_DACLRCK),
+
+	.FPGA_I2C_SDAT(FPGA_I2C_SDAT),
+
+	// Outputs
+	.AUD_XCK(AUD_XCK),
+	.AUD_DACDAT(AUD_DACDAT),
+
+	.FPGA_I2C_SCLK(FPGA_I2C_SCLK)
+);
+	///////////////////////////////////////////////////////////////////////////////////
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -1111,3 +1160,149 @@ module clock_devider(
 			record_high <= 1;
 	end
 endmodule
+
+
+/////////////////////////////////THIS MODULE FOR NOTE OUT TO X Y COORD TO DISPLAY/////////////////////////////////
+module Note_out_to_coord(note_out,X,Y);
+	input [31:0] note_out; //note_out singal from datapath
+	output reg[2:0] X; // metal bars
+	output reg[2:0] Y;
+	
+	always @(*)
+begin
+	case(note_out)
+		32'd1: begin
+		       X = 3'd0; 
+		       Y = 3'd0;
+				 end 
+		32'd2: begin
+		       X = 3'd0; 
+		       Y = 3'd1;
+				 end 
+		32'd4: begin
+		       X = 3'd0; 
+		       Y = 3'd2;
+				 end 
+		32'd8: begin
+		       X = 3'd0; 
+		       Y = 3'd3;
+				 end 
+		32'd16: begin
+		       X = 3'd0; 
+		       Y = 3'd4;
+				 end  
+		32'd32: begin
+		       X = 3'd0;
+				 Y=3'd5;
+				 end 
+///////////////////		
+		32'd64: begin
+		       X = 3'd1; 
+				 Y=3'd0; 
+				 end
+		32'd128: begin
+		        X = 3'd1;
+				  Y=3'd1; 
+				  end
+		32'd256: begin
+		         X = 3'd1;
+					Y=3'd2;
+				   end	
+		32'd512: begin
+					X = 3'd1; 
+					Y=3'd3;
+					end 
+		32'd1024: begin
+					X = 3'd1;
+					Y=3'd4;
+					end 
+		32'd2048: begin
+					X = 3'd1;
+					Y=3'd5; 
+					end
+////////////////////		
+		32'd4096:begin 
+					X = 3'd2; 
+					Y=3'd0;
+					end
+		32'd8192:begin 
+					X = 3'd2; 
+					Y=3'd1;
+					end 
+		32'd16384:begin 
+					X = 3'd2; 
+					Y=3'd2;
+					end 
+		32'd32768:begin 
+					X = 3'd2;
+					Y=3'd3;
+					end 
+		32'd65536:begin
+					X = 3'd2; 
+					Y=3'd4;
+					end 
+		32'd131072:begin 
+					X = 3'd2; 
+					Y=3'd5;
+					end 
+/////////////////////		
+		32'd262144:begin 
+					X = 3'd3;
+					Y=3'd0;
+					end 
+		32'd524288:begin 
+					X = 3'd3; 
+					Y=3'd1;
+					end 
+		32'd1048576:begin
+					X = 3'd3; 
+					Y=3'd2;
+					end 
+		32'd2097152:begin
+					X = 3'd3;
+					Y=3'd3; 
+					end
+		32'd4194304:begin 
+					X = 3'd3;
+					Y=3'd4;
+					end
+		32'd8388608:begin
+					X = 3'd3;
+					Y=3'd5;
+					end
+//////////////////////		
+		32'd16777216:begin
+					X = 3'd4;
+					Y=3'd0;
+					end 
+		32'd33554432:begin
+					X = 3'd4;
+					Y=3'd1;
+					end 
+		32'd67108864:begin
+					X = 3'd4;
+					Y=3'd2;
+					end 
+		32'd134217728:begin
+					X = 3'd4;
+					Y=3'd3;
+					end 
+		32'd268435456:begin
+					X = 3'd4;
+					Y=3'd4;
+					end 
+		32'd536870912:begin
+					X = 3'd4;
+					Y=3'd5;
+					end
+		
+	default:begin
+					X = 3'd0;
+					Y=3'd0;
+				end	
+	endcase
+end
+	
+	endmodule
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
