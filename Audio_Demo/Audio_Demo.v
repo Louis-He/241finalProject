@@ -1,10 +1,10 @@
-
 module Audio_Demo (
 //Input From top module
    note_out,
-	// Inputs
+// Inputs
 	CLOCK_50,
 	KEY,
+//	SW,
 	AUD_ADCDAT,
 
 	// Bidirectionals
@@ -35,6 +35,8 @@ input		[31:0] note_out;
 // Inputs
 input				CLOCK_50;
 input		[3:0]	KEY;
+//JUST FOR TEST
+//input    [1:0] SW;
 input				AUD_ADCDAT;
 
 // Bidirectionals
@@ -66,6 +68,11 @@ wire				write_audio_out;
 
 /////////////////////////////////////////////////////////////////////////////
 ////////////////////////START OF EDIT////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+//TEST sound for note_out[CHECKED]
+//wire [31:0]note_out=32'd1;
 
 reg [4:0] frequency;
 
@@ -112,10 +119,33 @@ begin
 	endcase
 	
 end
+
+
+
+//TEST sound for increment frequency[CHECKED]
+
+//reg [4:0]frequency;
 //
+//always @(posedge SW[0])
+//begin
+//   if(SW[1]==1)
+//	begin
+//	frequency <= 5'd0;
+//	end
+//	
+//	else
+//	begin
+//	if(frequency == 5'd29)
+//		frequency <= 5'd0;
+//	else frequency <= frequency + 1;
+//	end
+//end
 
 
-//correspond delay to each frequency
+//Test Sound for different frequency [CHECKED]
+//wire [4:0] frequency = 5'd1;
+
+///////////////////////////////////////////////////////////////////
 reg [18:0] delay_cnt;
 reg [18:0] delay;
 reg snd;
@@ -163,8 +193,10 @@ begin
 	
 end
 
+//Test Sound for different delay [CHECKED]
+//wire [18:0] delay =19'd454545;
+//wire [18:0] delay =19'd218340;
 
-//
 always @(posedge CLOCK_50)
 begin
 	if(delay_cnt == delay) begin
@@ -177,7 +209,7 @@ end
 
 
 //control the voice
-wire [31:0] sound1 = (note_out == 0) ? 0 : snd ? 32'd10000000 : -32'd10000000;
+wire [31:0] sound1 = snd ? 32'd10000000 : -32'd10000000;
 wire [31:0] sound = sound1;
 
 
@@ -186,8 +218,8 @@ wire [31:0] sound = sound1;
 
 /////////////////////////Fixed module DONT CHANGE/////////////////////////
 assign read_audio_in			= audio_in_available & audio_out_allowed;
-assign left_channel_audio_out	= left_channel_audio_in+sound;
-assign right_channel_audio_out	= right_channel_audio_in+sound;
+assign left_channel_audio_out	= left_channel_audio_in + sound;
+assign right_channel_audio_out	= right_channel_audio_in + sound;
 assign write_audio_out			= audio_in_available & audio_out_allowed;
 
 

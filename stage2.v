@@ -6,7 +6,19 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 		VGA_SYNC_N,						//	VGA SYNC
 		VGA_R,   						//	VGA Red[9:0]
 		VGA_G,	 						//	VGA Green[9:0]
-		VGA_B);   						//	VGA Blue[9:0]);
+		VGA_B,   						//	VGA Blue[9:0])
+		//////////////////////AUDIO//////////////////////
+		AUD_ADCDAT,
+// Bidirectionals
+   	AUD_BCLK,
+		AUD_ADCLRCK,
+		AUD_DACLRCK,
+		FPGA_I2C_SDAT,
+// Outputs
+		AUD_XCK,
+   	AUD_DACDAT,
+		FPGA_I2C_SCLK
+		);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
@@ -22,7 +34,20 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 	output	[7:0]	VGA_R;   				//	VGA Red[7:0] Changed from 10 to 8-bit DAC
 	output	[7:0]	VGA_G;	 				//	VGA Green[7:0]
 	output	[7:0]	VGA_B;   				//	VGA Blue[7:0]
+///////////////////////IN/OUTPUT FOR AUDIO//////////////////////////////
+input				AUD_ADCDAT;
 
+// Bidirectionals
+inout				AUD_BCLK;
+inout				AUD_ADCLRCK;
+inout				AUD_DACLRCK;
+inout				FPGA_I2C_SDAT;
+
+// Outputs
+output				AUD_XCK;
+output				AUD_DACDAT;
+output				FPGA_I2C_SCLK;
+///////////////////////////////////////////////////////////////////////
 
 	// board based input
 	wire resetn;
@@ -166,6 +191,30 @@ module stage1(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX5, VGA_CLK,   				
 	note_background notePic(.address(draw_address), .clock(CLOCK_50), .data(1'b0), .wren(1'b0), .q(colour_out_note_background));
 	background backgroundPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_background));
 
+	///////////////////////////////////AUDIO DEMO MODULE///////////////////////////////
+module Audio_Demo (
+//Input From top module
+   .note_out(note[31:0]),
+// Inputs
+	.CLOCK_50(CLOCK_50),
+	.KEY(KEY),
+//	SW,
+	.AUD_ADCDAT(AUD_ADCDAT),
+
+	// Bidirectionals
+	.AUD_BCLK(AUD_BCLK),
+	.AUD_ADCLRCK(AUD_ADCLRCK),
+	.AUD_DACLRCK(AUD_DACLRCK),
+
+	.FPGA_I2C_SDAT(FPGA_I2C_SDAT),
+
+	// Outputs
+	.AUD_XCK(AUD_XCK),
+	.AUD_DACDAT(AUD_DACDAT),
+
+	.FPGA_I2C_SCLK(FPGA_I2C_SCLK)
+);
+	///////////////////////////////////////////////////////////////////////////////////
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
