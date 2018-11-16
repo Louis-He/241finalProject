@@ -202,7 +202,7 @@ output				FPGA_I2C_SCLK;
 	background backgroundPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_background));
 	recording recordingPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_recording));
 
-	
+
 	///////////////////////////////////AUDIO DEMO MODULE///////////////////////////////
 	Audio_Demo audio1(
 	//Input From top module
@@ -317,7 +317,7 @@ module control(
 	output [5:0] state
 	);
 	wire [1:0] choice = switches[1:0];
-	
+
 	clock_devider clock0(.clk(clk), .resetn(resetn), .speed(switches[9:7]), .slower_clk(enable), .record_high(record_high));
 
 	// ######################## FINITE STATE MACHINE ##############################
@@ -333,7 +333,7 @@ module control(
 				S_WHITE_OPTION_CLEAR        = 5'd4,
 				S_WHITE_OPTION              = 5'd5,
 				S_SELECT_MODE               = 5'd6,
-				
+
 				S_SELECT_ONE_CLEAR          = 5'd7,
 				S_SELECT_ONE                = 5'd8,
 				S_SELECT_TWO_CLEAR          = 5'd9,
@@ -345,7 +345,7 @@ module control(
 
 				S_WAIT_RECORD               = 5'd14,
 				S_WAIT_RECORD_WAIT          = 5'd15,
-				
+
 				S_RECORDING_WHITE_CLEAR     = 5'd16,
 				S_RECORDING_WHITE           = 5'd17,
 				S_RECORDING_CLEAR           = 5'd18,
@@ -363,7 +363,7 @@ module control(
 				S_PLAY_STOP                 = 5'd29,
 				STOP_WAIT          			 = 5'd30;
 				// S_PLAY_STOP_WAIT            = 5'd31;
-				
+
 	// state_table
 	always@(*) begin
       case (current_state)
@@ -386,7 +386,7 @@ module control(
 			S_SELECT_MODE: begin
 				if(choice == 2'b01)
 					next_state = S_SELECT_ONE_CLEAR;
-				else if(choice == 2'b00) 
+				else if(choice == 2'b00)
 					next_state = S_SELECT_TWO_CLEAR;
 				else
 					next_state = S_BEGIN;
@@ -396,7 +396,7 @@ module control(
 				if((counterX == 8'd19 & counterY == 7'd6) | (counterX > 8'd20 | counterY > 7'd7)) begin
 					if(~(choice == 2'b01))
 						next_state = S_PLOT_BACKGROUND_END;
-					else if(select) 
+					else if(select)
 						next_state = S_SELECT_MODE_WAIT;
 					else begin
 						if (choice == 2'b01)
@@ -425,7 +425,7 @@ module control(
 				else
 					next_state = S_SELECT_TWO;
 			end
-			
+
 			// S_SELECT_MODE: next_state = select ? S_SELECT_MODE_WAIT : S_SELECT_MODE;
 			S_SELECT_MODE_WAIT: next_state = S_PLOT_NOTEBACKGROUND_CLEAR;
 			S_PLOT_NOTEBACKGROUND_CLEAR: next_state = S_PLOT_NOTEBACKGROUND;
@@ -456,7 +456,7 @@ module control(
 			S_WAIT_RECORD_WAIT: next_state = select ? S_WAIT_RECORD_WAIT : S_RECORDING_WHITE_CLEAR;
 			S_RECORDING_WHITE_CLEAR: next_state = S_RECORDING_WHITE;
 			S_RECORDING_WHITE: begin
-				if(counterX == 8'd23 & counterY == 7'd7) 
+				if(counterX == 8'd23 & counterY == 7'd7)
 					next_state = S_RECORDING_CLEAR;
 				else
 					next_state = S_RECORDING_WHITE;
@@ -477,7 +477,7 @@ module control(
 			S_RECORDING_WAIT: next_state = select ? S_RECORDING_WAIT : S_RECORDING_STOP_WHITE_CLEAR;
 			S_RECORDING_STOP_WHITE_CLEAR: next_state = S_RECORDING_STOP_WHITE;
 			S_RECORDING_STOP_WHITE: begin
-				if(counterX == 8'd23 & counterY == 7'd7) 
+				if(counterX == 8'd23 & counterY == 7'd7)
 					next_state = S_RECORD_STOP;
 				else
 					next_state = S_RECORDING_STOP_WHITE;
@@ -521,7 +521,7 @@ module control(
 			default: next_state = S_BEGIN;
 		endcase
 	end
-	
+
 	/*
 	// PLOT FSM
 	reg [3:0] plot_current_state;
@@ -531,7 +531,7 @@ module control(
 	localparam  P_CLEAR    = 4'd1;
 	localparam  P_PLOT     = 4'd2;
 	*/
-	
+
 	// Output logic aka all of our datapath control signals
     always@(*) begin: enable_signals
 		record_reset = 0;
@@ -587,12 +587,12 @@ module control(
 					incrementY = 1;
 				end
 			end
-			
+
 			S_SELECT_MODE: begin
 				clearAllCounter = 1'b1;
 				is_white = 1'b1;
 			end
-			
+
 			S_SELECT_ONE_CLEAR: begin
 				clearAllCounter = 1'b1;
 				is_white = 1'b1;
@@ -615,7 +615,7 @@ module control(
 				else
 					ld_plot = 1'b0;
 			end
-			
+
 			S_SELECT_TWO_CLEAR: begin
 				clearAllCounter = 1'b1;
 				is_white = 1'b1;
@@ -638,7 +638,7 @@ module control(
 				else
 					ld_plot = 1'b0;
 			end
-			
+
 			S_PLOT_NOTEBACKGROUND_CLEAR: begin
 				clearAllCounter = 1'b1;
 				is_white = 1'b1;
@@ -728,7 +728,7 @@ module control(
 			S_PLAYING_WAIT:
 				is_play = 1;
 		endcase
-	
+
 		/*
 		case(plot_current_state)
 			P_INIT: plot_next_state = is_record ? P_CLEAR : P_INIT;
@@ -798,7 +798,7 @@ module datapath(
 	input [2:0] colour_in_arrow,
 	input [5:0] colour_in_singlenotePic,
 	input [5:0] colour_in_recording,
- 
+
 	// output signals for VGA
 	output reg [7:0] x,
 	output reg [6:0] y,
@@ -883,12 +883,94 @@ module datapath(
 				x <= initialX;
 				y <= initialY;
 			end
-			
+
+			// for printing nodes
 			if(ld_plot & is_record) begin
-				x <= 8'd100;
-				y <= 7'd100;
+				if (address == 6'd0) begin
+					x <= VGA_note_coorX + 8'd0;
+					y <= VGA_note_coorY + 7'd8;
+				end
+				else if (address == 6'd1) begin
+					x <= VGA_note_coorX + 8'd41;
+					y <= VGA_note_coorY + 7'd8;
+				end
+				else if (address == 6'd2) begin
+					x <= VGA_note_coorX + 8'd83;
+					y <= VGA_note_coorY + 7'd8;
+				end
+				else if (address == 6'd3) begin
+					x <= VGA_note_coorX + 8'd125;
+					y <= VGA_note_coorY + 7'd8;
+				end
+				else if (address == 6'd4) begin
+					x <= VGA_note_coorX + 8'd0;
+					y <= VGA_note_coorY + 7'd31;
+				end
+				else if (address == 6'd5) begin
+					x <= VGA_note_coorX + 8'd41;
+					y <= VGA_note_coorY + 7'd31;
+				end
+				else if (address == 6'd6) begin
+					x <= VGA_note_coorX + 8'd83;
+					y <= VGA_note_coorY + 7'd31;
+				end
+				else if (address == 6'd7) begin
+					x <= VGA_note_coorX + 8'd125;
+					y <= VGA_note_coorY + 7'd31;
+				end
+				else if (address == 6'd8) begin
+					x <= VGA_note_coorX + 8'd0;
+					y <= VGA_note_coorY + 7'd54;
+				end
+				else if (address == 6'd9) begin
+					x <= VGA_note_coorX + 8'd41;
+					y <= VGA_note_coorY + 7'd54;
+				end
+				else if (address == 6'd10) begin
+					x <= VGA_note_coorX + 8'd83;
+					y <= VGA_note_coorY + 7'd54;
+				end
+				else if (address == 6'd11) begin
+					x <= VGA_note_coorX + 8'd125;
+					y <= VGA_note_coorY + 7'd54;
+				end
+				else if (address == 6'd12) begin
+					x <= VGA_note_coorX + 8'd0;
+					y <= VGA_note_coorY + 7'd77;
+				end
+				else if (address == 6'd13) begin
+					x <= VGA_note_coorX + 8'd41;
+					y <= VGA_note_coorY + 7'd77;
+				end
+				else if (address == 6'd14) begin
+					x <= VGA_note_coorX + 8'd83;
+					y <= VGA_note_coorY + 7'd77;
+				end
+				else if (address == 6'd15) begin
+					x <= VGA_note_coorX + 8'd125;
+					y <= VGA_note_coorY + 7'd77;
+				end
+				else if (address == 6'd16) begin
+					x <= VGA_note_coorX + 8'd0;
+					y <= VGA_note_coorY + 7'd101;
+				end
+				else if (address == 6'd17) begin
+					x <= VGA_note_coorX + 8'd41;
+					y <= VGA_note_coorY + 7'd101;
+				end
+				else if (address == 6'd18) begin
+					x <= VGA_note_coorX + 8'd83;
+					y <= VGA_note_coorY + 7'd101;
+				end
+				else if (address == 6'd19) begin
+					x <= VGA_note_coorX + 8'd125;
+					y <= VGA_note_coorY + 7'd101;
+				end
+				else begin
+					x <= VGA_note_coorX + 8'd160;
+					y <= VGA_note_coorY + 7'd120  ;
+				end
 			end
-			
 			if (initializeX) begin
 				x <= initialX;
 				counterX <= 0;
@@ -921,9 +1003,8 @@ module datapath(
 				colour <= colour_in_singlenotePic;
 			else if(ld_pic_NO == 3'd4)
 				colour <= colour_in_recording;
-			else 
+			else
 				colour <= 6'b111111;
-				
 			// draw single node.
 		end
 	end
@@ -931,9 +1012,15 @@ module datapath(
 	wire [31:0] Note,note;
 	coordinates_converter C_C0(.S(s), .P(p), .note(Note)); //
 
-   ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
+   	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
 	//when go=0, is_record=1,bits are loaded to the ram
 	//when go=0, is_record=0,bits are read from the ram
+
+	wire [2:0] guitar_coorX, guitar_coorY;
+	wire [5:0] VGA_note_coorX;
+	wire [4:0] VGA_note_coorY;
+	Note_out_to_coord N_C0(.note_out(Note), .X(guitar_coorX), .Y(guitar_coorY));
+	guitar_coor_to_VGA_coor G_C0(.guitarX(guitar_coorX), .guitarY(guitar_coorY), .VGAX(VGA_note_coorX), .VGAY(VGA_note_coorY));
 
 	//output from ram to audio
 	always@(*) begin
@@ -1133,14 +1220,199 @@ module clock_devider(
 	end
 endmodule
 
-
 ///////////////////////////// FOR GUITAR X Y COORD TO VGA X Y/////////////////////////////////////////////////////
 module guitar_coor_to_VGA_coor(guitarX, guitarY, VGAX, VGAY);
 	input [2:0] guitarX;
 	input [2:0] guitarY;
-	output reg [2:0] VGAX;
-	output reg [2:0] VGAY;
-	
+	output reg [5:0] VGAX;
+	output reg [4:0] VGAY;
+
+	always @ ( * ) begin
+		if (guitarX == 3'd0) begin
+			if (guitarY == 3'd5) begin
+				VGAX = 6'd0;
+				VGAY = 5'd0;
+			end
+			else if (guitarY == 3'd4) begin
+				VGAX = 6'd0;
+				VGAY = 5'd3;
+			end
+			else if (guitarY == 3'd3) begin
+				VGAX = 6'd0;
+				VGAY = 5'd7;
+			end
+			else if (guitarY == 3'd2) begin
+				VGAX = 6'd0;
+				VGAY = 5'd11;
+			end
+			else if (guitarY == 3'd1) begin
+				VGAX = 6'd0;
+				VGAY = 5'd15;
+			end
+			else if (guitarY == 3'd0) begin
+				VGAX = 6'd0;
+				VGAY = 5'd18;
+			end
+			else begin
+				VGAX = 6'd0;
+				VGAY = 5'd0;
+			end
+		end
+		else if (guitarX == 3'd1) begin
+			if (guitarY == 3'd5) begin
+				VGAX = 6'd6;
+				VGAY = 5'd0;
+			end
+			else if (guitarY == 3'd4) begin
+				VGAX = 6'd6;
+				VGAY = 5'd3;
+			end
+			else if (guitarY == 3'd3) begin
+				VGAX = 6'd6;
+				VGAY = 5'd7;
+			end
+			else if (guitarY == 3'd2) begin
+				VGAX = 6'd6;
+				VGAY = 5'd11;
+			end
+			else if (guitarY == 3'd1) begin
+				VGAX = 6'd6;
+				VGAY = 5'd15;
+			end
+			else if (guitarY == 3'd0) begin
+				VGAX = 6'd6;
+				VGAY = 5'd18;
+			end
+			else begin
+				VGAX = 6'd0;
+				VGAY = 5'd0;
+			end
+		end
+		else if (guitarX == 3'd2) begin
+			if (guitarY == 3'd5) begin
+				VGAX = 6'd13;
+				VGAY = 5'd0;
+			end
+			else if (guitarY == 3'd4) begin
+				VGAX = 6'd13;
+				VGAY = 5'd3;
+			end
+			else if (guitarY == 3'd3) begin
+				VGAX = 6'd13;
+				VGAY = 5'd7;
+			end
+			else if (guitarY == 3'd2) begin
+				VGAX = 6'd13;
+				VGAY = 5'd11;
+			end
+			else if (guitarY == 3'd1) begin
+				VGAX = 6'd13;
+				VGAY = 5'd15;
+			end
+			else if (guitarY == 3'd0) begin
+				VGAX = 6'd13;
+				VGAY = 5'd18;
+			end
+			else begin
+				VGAX = 6'd0;
+				VGAY = 5'd0;
+			end
+		end
+		else if (guitarX == 3'd3) begin
+			if (guitarY == 3'd5) begin
+				VGAX = 6'd20;
+				VGAY = 5'd0;
+			end
+			else if (guitarY == 3'd4) begin
+				VGAX = 6'd20;
+				VGAY = 5'd3;
+			end
+			else if (guitarY == 3'd3) begin
+				VGAX = 6'd20;
+				VGAY = 5'd7;
+			end
+			else if (guitarY == 3'd2) begin
+				VGAX = 6'd20;
+				VGAY = 5'd11;
+			end
+			else if (guitarY == 3'd1) begin
+				VGAX = 6'd20;
+				VGAY = 5'd15;
+			end
+			else if (guitarY == 3'd0) begin
+				VGAX = 6'd20;
+				VGAY = 5'd18;
+			end
+			else begin
+				VGAX = 6'd0;
+				VGAY = 5'd0;
+			end
+		end
+		else if (guitarX == 3'd4) begin
+			if (guitarY == 3'd5) begin
+				VGAX = 6'd27;
+				VGAY = 5'd0;
+			end
+			else if (guitarY == 3'd4) begin
+				VGAX = 6'd27;
+				VGAY = 5'd3;
+			end
+			else if (guitarY == 3'd3) begin
+				VGAX = 6'd27;
+				VGAY = 5'd7;
+			end
+			else if (guitarY == 3'd2) begin
+				VGAX = 6'd27;
+				VGAY = 5'd11;
+			end
+			else if (guitarY == 3'd1) begin
+				VGAX = 6'd27;
+				VGAY = 5'd15;
+			end
+			else if (guitarY == 3'd0) begin
+				VGAX = 6'd27;
+				VGAY = 5'd18;
+			end
+			else begin
+				VGAX = 6'd0;
+				VGAY = 5'd0;
+			end
+		end
+		else if (guitarX == 3'd5) begin
+			if (guitarY == 3'd5) begin
+				VGAX = 6'd34;
+				VGAY = 5'd0;
+			end
+			else if (guitarY == 3'd4) begin
+				VGAX = 6'd34;
+				VGAY = 5'd3;
+			end
+			else if (guitarY == 3'd3) begin
+				VGAX = 6'd34;
+				VGAY = 5'd7;
+			end
+			else if (guitarY == 3'd2) begin
+				VGAX = 6'd34;
+				VGAY = 5'd11;
+			end
+			else if (guitarY == 3'd1) begin
+				VGAX = 6'd34;
+				VGAY = 5'd15;
+			end
+			else if (guitarY == 3'd0) begin
+				VGAX = 6'd34;
+				VGAY = 5'd18;
+			end
+			else begin
+				VGAX = 6'd0;
+				VGAY = 5'd0;
+			end
+		end
+		else begin
+			VGAX = 6'd0;
+			VGAY = 5'd0;
+		end
+	end
 
 endmodule
 
@@ -1149,101 +1421,101 @@ module Note_out_to_coord(note_out,X,Y);
 	input [31:0] note_out; //note_out singal from datapath
 	output reg[2:0] X; // metal bars
 	output reg[2:0] Y;
-	
+
 	always @(*)	begin
 	case(note_out)
 		32'd1: begin
-		       X = 3'd0; 
+		       X = 3'd0;
 		       Y = 3'd0;
-				 end 
+				 end
 		32'd2: begin
-		       X = 3'd0; 
+		       X = 3'd0;
 		       Y = 3'd1;
-				 end 
+				 end
 		32'd4: begin
-		       X = 3'd0; 
+		       X = 3'd0;
 		       Y = 3'd2;
-				 end 
+				 end
 		32'd8: begin
-		       X = 3'd0; 
+		       X = 3'd0;
 		       Y = 3'd3;
-				 end 
+				 end
 		32'd16: begin
-		       X = 3'd0; 
+		       X = 3'd0;
 		       Y = 3'd4;
-				 end  
+				 end
 		32'd32: begin
 		       X = 3'd0;
 				 Y=3'd5;
-				 end 
-///////////////////		
+				 end
+		//////////
 		32'd64: begin
-		       X = 3'd1; 
-				 Y=3'd0; 
+		       X = 3'd1;
+				 Y=3'd0;
 				 end
 		32'd128: begin
 		        X = 3'd1;
-				  Y=3'd1; 
+				  Y=3'd1;
 				  end
 		32'd256: begin
 		         X = 3'd1;
 					Y=3'd2;
-				   end	
+				   end
 		32'd512: begin
-					X = 3'd1; 
+					X = 3'd1;
 					Y=3'd3;
-					end 
+					end
 		32'd1024: begin
 					X = 3'd1;
 					Y=3'd4;
-					end 
+					end
 		32'd2048: begin
 					X = 3'd1;
-					Y=3'd5; 
+					Y=3'd5;
 					end
-////////////////////		
-		32'd4096:begin 
-					X = 3'd2; 
+		////////////////////
+		32'd4096:begin
+					X = 3'd2;
 					Y=3'd0;
 					end
-		32'd8192:begin 
-					X = 3'd2; 
+		32'd8192:begin
+					X = 3'd2;
 					Y=3'd1;
-					end 
-		32'd16384:begin 
-					X = 3'd2; 
+					end
+		32'd16384:begin
+					X = 3'd2;
 					Y=3'd2;
-					end 
-		32'd32768:begin 
+					end
+		32'd32768:begin
 					X = 3'd2;
 					Y=3'd3;
-					end 
+					end
 		32'd65536:begin
-					X = 3'd2; 
+					X = 3'd2;
 					Y=3'd4;
-					end 
-		32'd131072:begin 
-					X = 3'd2; 
+					end
+		32'd131072:begin
+					X = 3'd2;
 					Y=3'd5;
-					end 
-/////////////////////		
-		32'd262144:begin 
+					end
+		/////////////////////
+		32'd262144:begin
 					X = 3'd3;
 					Y=3'd0;
-					end 
-		32'd524288:begin 
-					X = 3'd3; 
+					end
+		32'd524288:begin
+					X = 3'd3;
 					Y=3'd1;
-					end 
+					end
 		32'd1048576:begin
-					X = 3'd3; 
+					X = 3'd3;
 					Y=3'd2;
-					end 
+					end
 		32'd2097152:begin
 					X = 3'd3;
-					Y=3'd3; 
+					Y=3'd3;
 					end
-		32'd4194304:begin 
+		32'd4194304:begin
 					X = 3'd3;
 					Y=3'd4;
 					end
@@ -1251,36 +1523,35 @@ module Note_out_to_coord(note_out,X,Y);
 					X = 3'd3;
 					Y=3'd5;
 					end
-//////////////////////		
+		//////////////////////
 		32'd16777216:begin
 					X = 3'd4;
 					Y=3'd0;
-					end 
+					end
 		32'd33554432:begin
 					X = 3'd4;
 					Y=3'd1;
-					end 
+					end
 		32'd67108864:begin
 					X = 3'd4;
 					Y=3'd2;
-					end 
+					end
 		32'd134217728:begin
 					X = 3'd4;
 					Y=3'd3;
-					end 
+					end
 		32'd268435456:begin
 					X = 3'd4;
 					Y=3'd4;
-					end 
+					end
 		32'd536870912:begin
 					X = 3'd4;
 					Y=3'd5;
 					end
-		
 		default: begin
 					X = 3'd0;
 					Y=3'd0;
-				end	
+				end
 		endcase
 	end
 endmodule
