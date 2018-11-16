@@ -6,19 +6,7 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 		VGA_SYNC_N,						//	VGA SYNC
 		VGA_R,   						//	VGA Red[9:0]
 		VGA_G,	 						//	VGA Green[9:0]
-		VGA_B,   						//	VGA Blue[9:0])
-		//////////////////////AUDIO//////////////////////
-		AUD_ADCDAT,
-// Bidirectionals
-   	AUD_BCLK,
-		AUD_ADCLRCK,
-		AUD_DACLRCK,
-		FPGA_I2C_SDAT,
-// Outputs
-		AUD_XCK,
-   	AUD_DACDAT,
-		FPGA_I2C_SCLK
-		);
+		VGA_B);   						//	VGA Blue[9:0]);
 	input CLOCK_50;
 	input [9:0] SW;
 	input [3:0] KEY;
@@ -34,20 +22,7 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 	output	[7:0]	VGA_R;   				//	VGA Red[7:0] Changed from 10 to 8-bit DAC
 	output	[7:0]	VGA_G;	 				//	VGA Green[7:0]
 	output	[7:0]	VGA_B;   				//	VGA Blue[7:0]
-///////////////////////IN/OUTPUT FOR AUDIO//////////////////////////////
-input				AUD_ADCDAT;
 
-// Bidirectionals
-inout				AUD_BCLK;
-inout				AUD_ADCLRCK;
-inout				AUD_DACLRCK;
-inout				FPGA_I2C_SDAT;
-
-// Outputs
-output				AUD_XCK;
-output				AUD_DACDAT;
-output				FPGA_I2C_SCLK;
-///////////////////////////////////////////////////////////////////////
 
 	// board based input
 	wire resetn;
@@ -202,31 +177,6 @@ output				FPGA_I2C_SCLK;
 	background backgroundPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_background));
 	recording recordingPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_recording));
 
-	
-	///////////////////////////////////AUDIO DEMO MODULE///////////////////////////////
-	Audio_Demo audio1(
-	//Input From top module
-		.note_out(note[31:0]),
-	// Inputs
-		.CLOCK_50(CLOCK_50),
-		.KEY(KEY),
-	//	SW,
-		.AUD_ADCDAT(AUD_ADCDAT),
-
-		// Bidirectionals
-		.AUD_BCLK(AUD_BCLK),
-		.AUD_ADCLRCK(AUD_ADCLRCK),
-		.AUD_DACLRCK(AUD_DACLRCK),
-
-		.FPGA_I2C_SDAT(FPGA_I2C_SDAT),
-
-		// Outputs
-		.AUD_XCK(AUD_XCK),
-		.AUD_DACDAT(AUD_DACDAT),
-
-		.FPGA_I2C_SCLK(FPGA_I2C_SCLK)
-	);
-	///////////////////////////////////////////////////////////////////////////////////
 	////convert datapath output to HEX display output
 	wire [3:0] hex_digit1, hex_digit2;
 
@@ -355,18 +305,20 @@ module control(
 				S_RECORDING_STOP_WHITE_CLEAR= 5'd22,
 				S_RECORDING_STOP_WHITE      = 5'd23,
 				S_RECORD_STOP               = 5'd24,
+				S_RECORD_STOP_WAIT          = 5'd25,
 
-				S_WAIT_PLAY                 = 5'd25,
-				S_WAIT_PLAY_WAIT            = 5'd26,
-				S_PLAYING                   = 5'd27,
-				S_PLAYING_WAIT              = 5'd28,
-				S_PLAY_STOP                 = 5'd29,
-				STOP_WAIT          			 = 5'd30;
-				// S_PLAY_STOP_WAIT            = 5'd31;
-				
+				S_WAIT_PLAY                 = 5'd26,
+				S_WAIT_PLAY_WAIT            = 5'd27,
+				S_PLAYING                   = 5'd28,
+				S_PLAYING_WAIT              = 5'd29,
+				S_PLAY_STOP                 = 5'd30,
+				S_PLAY_STOP_WAIT            = 5'd31,
+
+				S_END                       = 5'd32;
 	// state_table
-	always@(*) begin
-      case (current_state)
+	always@(*)
+    begin: state_table
+        case (current_state)
 			S_BEGIN: next_state = S_PLOT_BACKGROUND_CLEAR;
 			S_PLOT_BACKGROUND_CLEAR: next_state = S_PLOT_BACKGROUND;
 			S_PLOT_BACKGROUND: begin
@@ -378,32 +330,36 @@ module control(
 			S_PLOT_BACKGROUND_END: next_state = S_WHITE_OPTION_CLEAR;
 			S_WHITE_OPTION_CLEAR: next_state = S_WHITE_OPTION;
 			S_WHITE_OPTION: begin
-				if(counterX == 8'd19 & counterY == 7'd30)
+				if(counterX == 8'd19 & counterY == 7'd30) begin
 					next_state = S_SELECT_MODE;
+				end
 				else
 					next_state = S_WHITE_OPTION;
 			end
 			S_SELECT_MODE: begin
-				if(choice == 2'b01)
+				if(choice == 2'b01) begin
 					next_state = S_SELECT_ONE_CLEAR;
-				else if(choice == 2'b00) 
+				end
+				else if(choice == 2'b00) begin
 					next_state = S_SELECT_TWO_CLEAR;
+				end
 				else
-					next_state = S_BEGIN;
+					next_state = S_PLOT_BACKGROUND_CLEAR;
 			end
 			S_SELECT_ONE_CLEAR: next_state = S_SELECT_ONE;
 			S_SELECT_ONE: begin
 				if((counterX == 8'd19 & counterY == 7'd6) | (counterX > 8'd20 | counterY > 7'd7)) begin
-					if(~(choice == 2'b01))
+					if(~(choice == 2'b01)) begin
 						next_state = S_PLOT_BACKGROUND_END;
-					else if(select) 
+					end
+					else if(select) begin
 						next_state = S_SELECT_MODE_WAIT;
-					else begin
+					end
+					else
 						if (choice == 2'b01)
 							next_state = S_SELECT_ONE;
 						else
 							next_state = S_PLOT_BACKGROUND_END;
-					end
 				end
 				else
 					next_state = S_SELECT_ONE;
@@ -411,16 +367,17 @@ module control(
 			S_SELECT_TWO_CLEAR: next_state = S_SELECT_TWO;
 			S_SELECT_TWO: begin
 				if((counterX == 8'd19 & counterY == 7'd6) | (counterX > 8'd20 | counterY > 7'd7)) begin
-					if(~(choice == 2'b00))
+					if(~(choice == 2'b00)) begin
 						next_state = S_PLOT_BACKGROUND_END;
-					else if(select)
+					end
+					else if(select) begin
 						next_state = S_SELECT_MODE_WAIT;
-					else begin
+					end
+					else
 						if (choice == 2'b00)
 							next_state = S_SELECT_TWO;
 						else
 							next_state = S_PLOT_BACKGROUND_END;
-					end
 				end
 				else
 					next_state = S_SELECT_TWO;
@@ -432,10 +389,17 @@ module control(
 			S_PLOT_NOTEBACKGROUND: begin
 				if(counterX == 8'd159 & counterY == 7'd120 ) begin
 					if(select == 0) begin
-						if (switches[1:0] == 2'b0)
+						if (switches[1:0] == 2'b0) begin
 							next_state = S_WAIT_PLAY;
-						else if(switches[1:0] == 2'b1)
+						end
+						else if(switches[1:0] == 2'b1) begin
 							next_state = S_WAIT_RECORD;
+						end
+						/*
+						else if (condition) begin
+
+						end
+						*/
 						else
 							next_state = S_PLOT_NOTEBACKGROUND;
 					end
@@ -446,12 +410,15 @@ module control(
 
 			//################### RECORD MODE FSM #################
 			S_WAIT_RECORD: begin
-				if (back)
+				if (back) begin
 					next_state = S_SELECT_MODE;
-				else if (select)
+				end
+				else if (select) begin
 					next_state = S_WAIT_RECORD_WAIT;
-				else
+				end
+				else begin
 					next_state = S_WAIT_RECORD;
+				end
 			end
 			S_WAIT_RECORD_WAIT: next_state = select ? S_WAIT_RECORD_WAIT : S_RECORDING_WHITE_CLEAR;
 			S_RECORDING_WHITE_CLEAR: next_state = S_RECORDING_WHITE;
@@ -469,55 +436,65 @@ module control(
 					next_state = S_RECORDING_PLOT;
 			end
 			S_RECORDING: begin
-				if (select)
+				if (select) begin
 					next_state = S_RECORDING_WAIT;
-				else
+				end
+				else begin
 					next_state = S_RECORDING;
+				end
 			end
 			S_RECORDING_WAIT: next_state = select ? S_RECORDING_WAIT : S_RECORDING_STOP_WHITE_CLEAR;
 			S_RECORDING_STOP_WHITE_CLEAR: next_state = S_RECORDING_STOP_WHITE;
-			S_RECORDING_STOP_WHITE: begin
+			S_RECORDING_STOP_WHITE: 
 				if(counterX == 8'd23 & counterY == 7'd7) 
 					next_state = S_RECORD_STOP;
 				else
 					next_state = S_RECORDING_STOP_WHITE;
-			end
 			S_RECORD_STOP: begin
-				if (select | back)
-					next_state = STOP_WAIT;
-				else
+				if (select | back) begin
+					next_state = S_RECORD_STOP_WAIT;
+				end
+				else begin
 					next_state = S_RECORD_STOP;
+				end
 			end
-			STOP_WAIT: next_state = select ? STOP_WAIT : S_BEGIN;
+			S_RECORD_STOP_WAIT: next_state = select ? S_RECORD_STOP_WAIT : S_END;
 			//################# RECORD MODE FSM END#################
 
 			//#################### PLAY MODE FSM ###################
 			S_WAIT_PLAY: begin
-				if (back)
+				if (back) begin
 					next_state = S_SELECT_MODE;
-				else if (select)
+				end
+				else if (select) begin
 					next_state = S_WAIT_PLAY_WAIT;
-				else
+				end
+				else begin
 					next_state = S_WAIT_PLAY;
+				end
 			end
 			S_WAIT_PLAY_WAIT: next_state = select ? S_WAIT_PLAY_WAIT : S_PLAYING;
 			S_PLAYING: begin
-				if (select)
+				if (select) begin
 					next_state = S_PLAYING_WAIT;
-				else
+				end
+				else begin
 					next_state = S_PLAYING;
+				end
 			end
 			S_PLAYING_WAIT: next_state = select ? S_PLAYING_WAIT : S_PLAY_STOP;
 			S_PLAY_STOP: begin
-				if (select | back)
-					next_state = STOP_WAIT;
-				else
+				if (select | back) begin
+					next_state = S_PLAY_STOP_WAIT;
+				end
+				else begin
 					next_state = S_PLAY_STOP;
+				end
 			end
-			// S_PLAY_STOP_WAIT: next_state = select ? S_PLAY_STOP_WAIT : S_BEGIN;
-			// S_PLAY_STOP_WAIT: next_state = S_BEGIN;
+			S_PLAY_STOP_WAIT: next_state = select ? S_PLAY_STOP_WAIT : S_END;
 			//################## PLAY MODE FSM END##################
 
+			S_END: next_state = S_BEGIN;
 			default: next_state = S_BEGIN;
 		endcase
 	end
@@ -750,7 +727,8 @@ module control(
 	end
 
 	// state_FFs
-   always@(posedge clk) begin: state_FFs
+    always@(posedge clk)
+	begin: state_FFs
 		if(!resetn) begin
 			current_state <= S_BEGIN;
 		end
@@ -923,6 +901,7 @@ module datapath(
 				colour <= colour_in_recording;
 			else 
 				colour <= 6'b111111;
+				
 				
 			// draw single node.
 		end
@@ -1132,157 +1111,3 @@ module clock_devider(
 			record_high <= 1;
 	end
 endmodule
-
-
-///////////////////////////// FOR GUITAR X Y COORD TO VGA X Y/////////////////////////////////////////////////////
-module guitar_coor_to_VGA_coor(guitarX, guitarY, VGAX, VGAY);
-	input [2:0] guitarX;
-	input [2:0] guitarY;
-	output reg [2:0] VGAX;
-	output reg [2:0] VGAY;
-	
-
-endmodule
-
-/////////////////////////////////THIS MODULE FOR NOTE OUT TO X Y COORD TO DISPLAY/////////////////////////////////
-module Note_out_to_coord(note_out,X,Y);
-	input [31:0] note_out; //note_out singal from datapath
-	output reg[2:0] X; // metal bars
-	output reg[2:0] Y;
-	
-	always @(*)	begin
-	case(note_out)
-		32'd1: begin
-		       X = 3'd0; 
-		       Y = 3'd0;
-				 end 
-		32'd2: begin
-		       X = 3'd0; 
-		       Y = 3'd1;
-				 end 
-		32'd4: begin
-		       X = 3'd0; 
-		       Y = 3'd2;
-				 end 
-		32'd8: begin
-		       X = 3'd0; 
-		       Y = 3'd3;
-				 end 
-		32'd16: begin
-		       X = 3'd0; 
-		       Y = 3'd4;
-				 end  
-		32'd32: begin
-		       X = 3'd0;
-				 Y=3'd5;
-				 end 
-///////////////////		
-		32'd64: begin
-		       X = 3'd1; 
-				 Y=3'd0; 
-				 end
-		32'd128: begin
-		        X = 3'd1;
-				  Y=3'd1; 
-				  end
-		32'd256: begin
-		         X = 3'd1;
-					Y=3'd2;
-				   end	
-		32'd512: begin
-					X = 3'd1; 
-					Y=3'd3;
-					end 
-		32'd1024: begin
-					X = 3'd1;
-					Y=3'd4;
-					end 
-		32'd2048: begin
-					X = 3'd1;
-					Y=3'd5; 
-					end
-////////////////////		
-		32'd4096:begin 
-					X = 3'd2; 
-					Y=3'd0;
-					end
-		32'd8192:begin 
-					X = 3'd2; 
-					Y=3'd1;
-					end 
-		32'd16384:begin 
-					X = 3'd2; 
-					Y=3'd2;
-					end 
-		32'd32768:begin 
-					X = 3'd2;
-					Y=3'd3;
-					end 
-		32'd65536:begin
-					X = 3'd2; 
-					Y=3'd4;
-					end 
-		32'd131072:begin 
-					X = 3'd2; 
-					Y=3'd5;
-					end 
-/////////////////////		
-		32'd262144:begin 
-					X = 3'd3;
-					Y=3'd0;
-					end 
-		32'd524288:begin 
-					X = 3'd3; 
-					Y=3'd1;
-					end 
-		32'd1048576:begin
-					X = 3'd3; 
-					Y=3'd2;
-					end 
-		32'd2097152:begin
-					X = 3'd3;
-					Y=3'd3; 
-					end
-		32'd4194304:begin 
-					X = 3'd3;
-					Y=3'd4;
-					end
-		32'd8388608:begin
-					X = 3'd3;
-					Y=3'd5;
-					end
-//////////////////////		
-		32'd16777216:begin
-					X = 3'd4;
-					Y=3'd0;
-					end 
-		32'd33554432:begin
-					X = 3'd4;
-					Y=3'd1;
-					end 
-		32'd67108864:begin
-					X = 3'd4;
-					Y=3'd2;
-					end 
-		32'd134217728:begin
-					X = 3'd4;
-					Y=3'd3;
-					end 
-		32'd268435456:begin
-					X = 3'd4;
-					Y=3'd4;
-					end 
-		32'd536870912:begin
-					X = 3'd4;
-					Y=3'd5;
-					end
-		
-		default: begin
-					X = 3'd0;
-					Y=3'd0;
-				end	
-		endcase
-	end
-endmodule
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////

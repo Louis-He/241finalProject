@@ -199,12 +199,16 @@ end
 
 always @(posedge CLOCK_50)
 begin
+   if(delay == 19'd500000)// when no signal make no sound
+	   snd <= 0;
+	
+	else begin
 	if(delay_cnt == delay) begin
 		delay_cnt <= 0;
 		snd <= !snd;
 	end
 	else delay_cnt <= delay_cnt + 1;
-
+   end
 end
 
 
