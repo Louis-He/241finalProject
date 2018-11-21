@@ -8,16 +8,16 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 		VGA_G,	 						//	VGA Green[9:0]
 		VGA_B,   						//	VGA Blue[9:0])
 		//////////////////////AUDIO//////////////////////
-		AUD_ADCDAT,
-// Bidirectionals
-   	AUD_BCLK,
-		AUD_ADCLRCK,
-		AUD_DACLRCK,
-		FPGA_I2C_SDAT,
-// Outputs
-		AUD_XCK,
-   	AUD_DACDAT,
-		FPGA_I2C_SCLK
+		AUD_ADCDAT,						//  AUD AUD_ADCDAT
+		// Bidirectionals
+   		AUD_BCLK,				        //  AUD AUD_BCLK
+		AUD_ADCLRCK,					//  AUD AUD_ADCLRCK
+		AUD_DACLRCK,					//  AUD AUD_DACLRCK
+		FPGA_I2C_SDAT,					//  AUD FPGA_I2C_SDAT
+		// Outputs
+		AUD_XCK,						//  AUD AUD_XCK
+   		AUD_DACDAT,						//  AUD AUD_DACDAT
+		FPGA_I2C_SCLK					//  AUD FPGA_I2C_SCLK
 		);
 	input CLOCK_50;
 	input [9:0] SW;
@@ -34,20 +34,20 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 	output	[7:0]	VGA_R;   				//	VGA Red[7:0] Changed from 10 to 8-bit DAC
 	output	[7:0]	VGA_G;	 				//	VGA Green[7:0]
 	output	[7:0]	VGA_B;   				//	VGA Blue[7:0]
-///////////////////////IN/OUTPUT FOR AUDIO//////////////////////////////
-input				AUD_ADCDAT;
+	///////////////////////IN/OUTPUT FOR AUDIO//////////////////////////////
+	input				AUD_ADCDAT;
 
-// Bidirectionals
-inout				AUD_BCLK;
-inout				AUD_ADCLRCK;
-inout				AUD_DACLRCK;
-inout				FPGA_I2C_SDAT;
+	// Bidirectionals
+	inout				AUD_BCLK;
+	inout				AUD_ADCLRCK;
+	inout				AUD_DACLRCK;
+	inout				FPGA_I2C_SDAT;
 
-// Outputs
-output				AUD_XCK;
-output				AUD_DACDAT;
-output				FPGA_I2C_SCLK;
-///////////////////////////////////////////////////////////////////////
+	// Outputs
+	output				AUD_XCK;
+	output				AUD_DACDAT;
+	output				FPGA_I2C_SCLK;
+	///////////////////////////////////////////////////////////////////////
 
 	// board based input
 	wire resetn;
@@ -207,6 +207,7 @@ output				FPGA_I2C_SCLK;
 	Audio_Demo audio1(
 	//Input From top module
 		.note_out(note[31:0]),
+		//.note_out(32'd1),
 	// Inputs
 		.CLOCK_50(CLOCK_50),
 		.KEY(KEY),
@@ -326,8 +327,7 @@ module control(
 	reg [5:0] next_state;
 	assign state = current_state;
 	// parameter stable_table
-	localparam  S_BEGIN                     = 5'd0,
-			    S_PLOT_BACKGROUND_CLEAR     = 5'd1,
+	localparam  S_BEGIN                     = 5'd1,
 				S_PLOT_BACKGROUND           = 5'd2,
 				S_PLOT_BACKGROUND_END       = 5'd3,
 				S_WHITE_OPTION_CLEAR        = 5'd4,
@@ -367,8 +367,7 @@ module control(
 	// state_table
 	always@(*) begin
       case (current_state)
-			S_BEGIN: next_state = S_PLOT_BACKGROUND_CLEAR;
-			S_PLOT_BACKGROUND_CLEAR: next_state = S_PLOT_BACKGROUND;
+			S_BEGIN: next_state = S_PLOT_BACKGROUND;
 			S_PLOT_BACKGROUND: begin
 				if(counterX == 8'd159 & counterY == 7'd120)
 					next_state = S_PLOT_BACKGROUND_END;
@@ -393,7 +392,7 @@ module control(
 			end
 			S_SELECT_ONE_CLEAR: next_state = S_SELECT_ONE;
 			S_SELECT_ONE: begin
-				if((counterX == 8'd19 & counterY == 7'd6) | (counterX > 8'd20 | counterY > 7'd7)) begin
+				if((counterX == 8'd19 & counterY == 7'd6) | (counterX > 8'd19 | counterY > 7'd6)) begin
 					if(~(choice == 2'b01))
 						next_state = S_PLOT_BACKGROUND_END;
 					else if(select)
@@ -410,7 +409,7 @@ module control(
 			end
 			S_SELECT_TWO_CLEAR: next_state = S_SELECT_TWO;
 			S_SELECT_TWO: begin
-				if((counterX == 8'd19 & counterY == 7'd6) | (counterX > 8'd20 | counterY > 7'd7)) begin
+				if((counterX == 8'd19 & counterY == 7'd6) | (counterX > 8'd19 | counterY > 7'd6)) begin
 					if(~(choice == 2'b00))
 						next_state = S_PLOT_BACKGROUND_END;
 					else if(select)
@@ -431,13 +430,16 @@ module control(
 			S_PLOT_NOTEBACKGROUND_CLEAR: next_state = S_PLOT_NOTEBACKGROUND;
 			S_PLOT_NOTEBACKGROUND: begin
 				if(counterX == 8'd159 & counterY == 7'd120 ) begin
-					if(select == 0) begin
+					if(select == 1'b0) begin
 						if (switches[1:0] == 2'b0)
 							next_state = S_WAIT_PLAY;
 						else if(switches[1:0] == 2'b1)
 							next_state = S_WAIT_RECORD;
 						else
 							next_state = S_PLOT_NOTEBACKGROUND;
+					end
+					else begin
+						next_state = S_PLOT_NOTEBACKGROUND;
 					end
 				end
 				else
@@ -488,6 +490,7 @@ module control(
 				else
 					next_state = S_RECORD_STOP;
 			end
+			//STOP_WAIT: next_state = S_BEGIN;
 			STOP_WAIT: next_state = select ? STOP_WAIT : S_BEGIN;
 			//################# RECORD MODE FSM END#################
 
@@ -551,7 +554,7 @@ module control(
 		initialY = 7'b0000000;
 
 		case (current_state)
-			S_PLOT_BACKGROUND_CLEAR:
+			S_BEGIN:
 				clearAllCounter = 1'b1;
 			S_PLOT_BACKGROUND: begin
 				ld_pic_NO = 3'd0;
@@ -723,8 +726,13 @@ module control(
 				record_reset = 1;
 			S_WAIT_PLAY_WAIT:
 				record_reset = 1;
-			S_PLAYING:
+			S_PLAYING: begin
 				is_play = 1;         //is_play=1 play
+				if(~record_high) begin
+					ld_plot = 1'b1;
+					is_red = 1'b1;
+				end
+			end
 			S_PLAYING_WAIT:
 				is_play = 1;
 		endcase
@@ -885,7 +893,7 @@ module datapath(
 			end
 
 			// for printing nodes
-			if(ld_plot & is_record) begin
+			if((ld_plot & is_record) | (ld_plot & is_play)) begin
 				if (address == 6'd0) begin
 					x <= VGA_note_coorX + 8'd0;
 					y <= VGA_note_coorY + 7'd8;
@@ -987,7 +995,11 @@ module datapath(
 				y <= y + 1;
 				counterY <= counterY + 1;
 			end
-			if (is_black)
+
+			// if not pressed anything, not wish to display anything.
+			if(ld_plot & is_record & is_undefined) | (ld_plot & is_play & is_undefined)
+				colour <= 6'b000000;
+			else if (is_black)
 				colour <= 6'b000000;
 			else if (is_white)
 				colour <= 6'b111111;
@@ -1019,8 +1031,9 @@ module datapath(
 	wire [2:0] guitar_coorX, guitar_coorY;
 	wire [5:0] VGA_note_coorX;
 	wire [4:0] VGA_note_coorY;
+	wire is_undefined;
 	Note_out_to_coord N_C0(.note_out(Note), .X(guitar_coorX), .Y(guitar_coorY));
-	guitar_coor_to_VGA_coor G_C0(.guitarX(guitar_coorX), .guitarY(guitar_coorY), .VGAX(VGA_note_coorX), .VGAY(VGA_note_coorY));
+	guitar_coor_to_VGA_coor G_C0(.guitarX(guitar_coorX), .guitarY(guitar_coorY), .VGAX(VGA_note_coorX), .VGAY(VGA_note_coorY), .is_undefined(is_undefined));
 
 	//output from ram to audio
 	always@(*) begin
@@ -1221,196 +1234,240 @@ module clock_devider(
 endmodule
 
 ///////////////////////////// FOR GUITAR X Y COORD TO VGA X Y/////////////////////////////////////////////////////
-module guitar_coor_to_VGA_coor(guitarX, guitarY, VGAX, VGAY);
+module guitar_coor_to_VGA_coor(guitarX, guitarY, VGAX, VGAY, is_undefined);
 	input [2:0] guitarX;
 	input [2:0] guitarY;
 	output reg [5:0] VGAX;
 	output reg [4:0] VGAY;
+	output reg is_undefined;
 
 	always @ ( * ) begin
 		if (guitarX == 3'd0) begin
 			if (guitarY == 3'd5) begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
+				is_undefined = 1'b1;
 			end
 			else if (guitarY == 3'd4) begin
 				VGAX = 6'd0;
 				VGAY = 5'd3;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd3) begin
 				VGAX = 6'd0;
 				VGAY = 5'd7;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd2) begin
 				VGAX = 6'd0;
 				VGAY = 5'd11;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd1) begin
 				VGAX = 6'd0;
 				VGAY = 5'd15;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd0) begin
 				VGAX = 6'd0;
 				VGAY = 5'd18;
+				is_undefined = 1'b0;
 			end
 			else begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 		end
 		else if (guitarX == 3'd1) begin
 			if (guitarY == 3'd5) begin
 				VGAX = 6'd6;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd4) begin
 				VGAX = 6'd6;
 				VGAY = 5'd3;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd3) begin
 				VGAX = 6'd6;
 				VGAY = 5'd7;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd2) begin
 				VGAX = 6'd6;
 				VGAY = 5'd11;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd1) begin
 				VGAX = 6'd6;
 				VGAY = 5'd15;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd0) begin
 				VGAX = 6'd6;
 				VGAY = 5'd18;
+				is_undefined = 1'b0;
 			end
 			else begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 		end
 		else if (guitarX == 3'd2) begin
 			if (guitarY == 3'd5) begin
 				VGAX = 6'd13;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd4) begin
 				VGAX = 6'd13;
 				VGAY = 5'd3;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd3) begin
 				VGAX = 6'd13;
 				VGAY = 5'd7;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd2) begin
 				VGAX = 6'd13;
 				VGAY = 5'd11;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd1) begin
 				VGAX = 6'd13;
 				VGAY = 5'd15;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd0) begin
 				VGAX = 6'd13;
 				VGAY = 5'd18;
+				is_undefined = 1'b0;
 			end
 			else begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 		end
 		else if (guitarX == 3'd3) begin
 			if (guitarY == 3'd5) begin
 				VGAX = 6'd20;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd4) begin
 				VGAX = 6'd20;
 				VGAY = 5'd3;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd3) begin
 				VGAX = 6'd20;
 				VGAY = 5'd7;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd2) begin
 				VGAX = 6'd20;
 				VGAY = 5'd11;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd1) begin
 				VGAX = 6'd20;
 				VGAY = 5'd15;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd0) begin
 				VGAX = 6'd20;
 				VGAY = 5'd18;
+				is_undefined = 1'b0;
 			end
 			else begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 		end
 		else if (guitarX == 3'd4) begin
 			if (guitarY == 3'd5) begin
 				VGAX = 6'd27;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd4) begin
 				VGAX = 6'd27;
 				VGAY = 5'd3;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd3) begin
 				VGAX = 6'd27;
 				VGAY = 5'd7;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd2) begin
 				VGAX = 6'd27;
 				VGAY = 5'd11;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd1) begin
 				VGAX = 6'd27;
 				VGAY = 5'd15;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd0) begin
 				VGAX = 6'd27;
 				VGAY = 5'd18;
+				is_undefined = 1'b0;
 			end
 			else begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 		end
 		else if (guitarX == 3'd5) begin
 			if (guitarY == 3'd5) begin
 				VGAX = 6'd34;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd4) begin
 				VGAX = 6'd34;
 				VGAY = 5'd3;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd3) begin
 				VGAX = 6'd34;
 				VGAY = 5'd7;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd2) begin
 				VGAX = 6'd34;
 				VGAY = 5'd11;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd1) begin
 				VGAX = 6'd34;
 				VGAY = 5'd15;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd0) begin
 				VGAX = 6'd34;
 				VGAY = 5'd18;
+				is_undefined = 1'b0;
 			end
 			else begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
+				is_undefined = 1'b0;
 			end
 		end
 		else begin
 			VGAX = 6'd0;
 			VGAY = 5'd0;
+			is_undefined = 1'b1;
 		end
 	end
 
