@@ -997,7 +997,7 @@ module datapath(
 			end
 
 			// if not pressed anything, not wish to display anything.
-			if(ld_plot & is_record & is_undefined) | (ld_plot & is_play & is_undefined)
+			if((ld_plot & is_record & is_undefined) | (ld_plot & is_play & is_undefined))
 				colour <= 6'b000000;
 			else if (is_black)
 				colour <= 6'b000000;
@@ -1246,7 +1246,7 @@ module guitar_coor_to_VGA_coor(guitarX, guitarY, VGAX, VGAY, is_undefined);
 			if (guitarY == 3'd5) begin
 				VGAX = 6'd0;
 				VGAY = 5'd0;
-				is_undefined = 1'b1;
+				is_undefined = 1'b0;
 			end
 			else if (guitarY == 3'd4) begin
 				VGAX = 6'd0;
@@ -1271,7 +1271,7 @@ module guitar_coor_to_VGA_coor(guitarX, guitarY, VGAX, VGAY, is_undefined);
 			else if (guitarY == 3'd0) begin
 				VGAX = 6'd0;
 				VGAY = 5'd18;
-				is_undefined = 1'b0;
+				is_undefined = 1'b1;
 			end
 			else begin
 				VGAX = 6'd0;
