@@ -1,5 +1,8 @@
 module Audio_Demo (
 //Input From top module
+   record_high, //when note is called, played from start
+   is_play, //[1-play BGM]
+   Sound_mode,
    note_out,
 // Inputs
 	CLOCK_50,
@@ -30,6 +33,9 @@ module Audio_Demo (
  *                             Port Declarations                             *
  *****************************************************************************/
 ////Input From top module
+input    record_high;
+input    is_play;
+input    [2:0]Sound_mode; //[0 square wave] [1 guitar sound][2 drum sound][3 ocean]
 input		[31:0] note_out;
 
 // Inputs
@@ -70,7 +76,7 @@ wire				write_audio_out;
 ////////////////////////START OF EDIT////////////////////////////////////////
 
 
-/////////////////////////////////////////////////////////////////////////////
+////////////////////////////////START OF SQUARE WAVE//////////////////////////////////
 //TEST sound for note_out[CHECKED]
 //wire [31:0]note_out=32'd1;
 
@@ -213,12 +219,444 @@ end
 
 
 //control the voice
-wire [31:0] sound1 = snd ? 32'd10000000 : -32'd10000000;
-wire [31:0] sound = sound1;
+wire [31:0] sound_square = snd ? 32'd10000000 : -32'd10000000;
+////////////////////////////////END OF SQUARE WAVE////////////////////////////
 
 
 
+////////////////////////////////START OF GUITAR WAVE//////////////////////////
 
+//increment of address
+reg [13:0] count; // 
+reg [17:0] address; // Guitar_sound
+reg [17:0] D_address; // Drum_sound
+reg [17:0] O_address; // Ocean_sound
+
+
+always @(posedge CLOCK_50)
+begin
+	if(count == 14'd8333) begin
+		count <= 14'd0;
+		if(record_high == 1'b0)
+			address <= 18'd0;
+		else if(address < 18'd8999)
+			address <= address + 18'd1;
+		else
+			address <= 18'd0;
+			
+		if(record_high == 1'b0)
+			D_address <= 18'd0;
+		else if(D_address < 18'd4494)
+			D_address <= D_address + 18'd1;
+		else
+			D_address <= 18'd0;
+			
+		if(O_address == 18'd30000)
+			O_address <= 18'd0;
+		else
+			O_address <= O_address + 18'd1;
+		count <= 14'd0;
+
+///////Test for drum sound
+//		if(D_address < 18'd4261)
+//			D_address <= D_address + 18'd1;
+//		else
+//			D_address <= 18'd0;
+	end 
+	else count <= count + 1;
+end
+//
+
+//Load sound from register to ramout
+wire [4:0] ramout00;
+wire [4:0] ramout01;
+wire [4:0] ramout02;
+wire [4:0] ramout03;
+wire [4:0] ramout04;
+
+wire [4:0] ramout10;
+wire [4:0] ramout11;
+wire [4:0] ramout12;
+wire [4:0] ramout13;
+wire [4:0] ramout14;
+
+wire [4:0] ramout20;
+wire [4:0] ramout21;
+wire [4:0] ramout22;
+wire [4:0] ramout23;
+wire [4:0] ramout24;
+
+wire [4:0] ramout30;
+wire [4:0] ramout31;
+wire [4:0] ramout32;
+wire [4:0] ramout33;
+wire [4:0] ramout34;
+
+wire [4:0] ramout40;
+wire [4:0] ramout41;
+wire [4:0] ramout42;
+wire [4:0] ramout43;
+wire [4:0] ramout44;
+
+wire [4:0] ramout50;
+wire [4:0] ramout51;
+wire [4:0] ramout52;
+wire [4:0] ramout53;
+wire [4:0] ramout54;
+
+S0P0 w0(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout00));
+	
+S0P1 w1(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout01));
+	
+S0P2 w2(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout02));
+
+S0P3 w3(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout03));
+	
+S0P4 w4(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout04));
+////////////////////
+S1P0 w5(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout10));
+	
+S1P1 w6(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout11));
+	
+S1P2 w7(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout12));
+
+S1P3 w8(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout13));
+	
+S1P4 w9(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout14));
+////////////////////
+S2P0 w10(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout20));
+	
+S2P1 w11(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout21));
+	
+S2P2 w12(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout22));
+
+S2P3 w13(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout23));
+	
+S2P4 w14(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout24));
+////////////////////
+S3P0 w15(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout30));
+	
+S3P1 w16(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout31));
+	
+S3P2 w17(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout32));
+
+S3P3 w18(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout33));
+	
+S3P4 w19(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout34));
+////////////////////
+S4P0 w20(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout40));
+	
+S4P1 w21(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout41));
+	
+S4P2 w22(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout42));
+
+S4P3 w23(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout43));
+	
+S4P4 w24(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout44));
+////////////////////
+S5P0 w25(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout50));
+	
+S5P1 w26(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout51));
+	
+S5P2 w27(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout52));
+
+S5P3 w28(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout53));
+	
+S5P4 w29(
+	.address(address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(ramout54));
+	
+
+///corespond frequency to each ramout
+reg [4:0] soundout;
+always @(*)
+begin
+	case(frequency)
+		5'd0: soundout = ramout00;
+		5'd6: soundout = ramout01;
+		5'd12: soundout = ramout02;
+		5'd18: soundout = ramout03;
+		5'd24: soundout = ramout04;
+	
+		5'd1: soundout = ramout10;
+		5'd7: soundout = ramout11;
+		5'd13: soundout = ramout12;
+		5'd19: soundout = ramout13;
+		5'd25: soundout = ramout14;
+		
+		5'd2: soundout = ramout20;
+		5'd8: soundout = ramout21;
+		5'd14: soundout = ramout22;
+		5'd20: soundout = ramout23;
+		5'd26: soundout = ramout24;
+		
+		5'd3: soundout = ramout30;
+		5'd9: soundout = ramout31;
+		5'd15: soundout = ramout32;
+		5'd21: soundout = ramout33;
+		5'd27: soundout = ramout34;
+	
+		5'd4: soundout = ramout40;
+		5'd10: soundout = ramout41;
+		5'd16: soundout = ramout42;
+		5'd22: soundout = ramout43;
+		5'd28: soundout = ramout44;
+	
+		5'd5: soundout = ramout50;
+		5'd11: soundout = ramout51;
+		5'd17: soundout = ramout52;
+		5'd23: soundout = ramout53;
+		5'd29: soundout = ramout54;
+		default: soundout =5'd0;
+	endcase
+end
+
+
+wire [31:0] G_sound = {soundout, {24'b0}};
+
+////////////////////////////////DRUM///////////////////////////////////////////
+wire [4:0] drumout1;
+wire [4:0] drumout2;
+wire [4:0] drumout3;
+wire [4:0] drumout4;
+
+drum1 d1(
+	.address(D_address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(drumout1));
+//
+drum2 d2(
+	.address(D_address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(drumout2));
+//
+drum3 d3(
+	.address(D_address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(drumout3));
+//
+drum4 d4(
+	.address(D_address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(drumout4));
+//
+reg [4:0] drumout;
+reg [1:0] beat_count;
+
+always @(posedge record_high)
+begin
+		if(beat_count == 2'd3)
+			beat_count <= 2'd0;
+		else
+			beat_count <= beat_count + 2'd1;
+end
+//
+always @(*)
+begin
+if(beat_count==2'd0)begin
+drumout = drumout1;
+end
+if(beat_count==2'd1)begin
+drumout = drumout2;
+end
+if(beat_count==2'd2)begin
+drumout = drumout3;
+end
+if(beat_count==2'd3)begin
+drumout = drumout1;
+end
+end
+//
+
+wire [31:0] drum_sound = {drumout, {24'b0}};
+///////////////////////////////OCEAN//////////////////////////////////////////
+wire [4:0] waveout;
+
+wave Wave0(
+	.address(O_address),
+	.clock(CLOCK_50),
+	.data(),
+	.wren(1'b0),
+	.q(waveout));
+	//
+wire [31:0] ocean_sound = {waveout, {24'b0}};
+
+////////////////////////////////END OF GUITAR WAVE////////////////////////////
+//selecting Guitar wave [0 square wave] [1 guitar sound][2 drum sound][3 ocean]
+
+reg  [31:0] sound;
+always @(*)
+begin
+if(Sound_mode==0)begin
+sound = sound_square;
+end
+if(Sound_mode==1)begin
+sound = G_sound;
+end
+if((Sound_mode==2)&&(is_play==1))begin
+sound = G_sound + drum_sound;
+end
+if((Sound_mode==3)&&(is_play==1))begin
+sound = G_sound + ocean_sound;
+end
+end
+//
 
 /////////////////////////Fixed module DONT CHANGE/////////////////////////
 assign read_audio_in			= audio_in_available & audio_out_allowed;

@@ -98,8 +98,29 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 	wire [5:0] colour;
 	wire [14:0] draw_address;
 
-	assign LEDR[5:0] = state;
-
+	// assign LEDR[5:0] = state;
+	assign LEDR[0] = ~GPIO_0[3];
+	assign LEDR[1] = ~GPIO_0[5];
+	assign LEDR[2] = ~GPIO_0[7];
+	assign LEDR[3] = ~GPIO_0[9];
+	assign LEDR[4] = ~GPIO_0[11];
+	assign LEDR[5] = ~GPIO_0[13];
+	assign LEDR[6] = ~GPIO_0[15];
+	assign LEDR[7] = ~GPIO_0[17];
+	assign LEDR[8] = ~GPIO_0[19];
+	assign LEDR[9] = ~GPIO_0[21];
+	
+	/*
+	reg led;
+	always @(posedge enable)
+	begin
+		led <= ~led;
+	end
+	
+	assign LEDR[9] = led;
+	*/
+	wire[5:0] address;
+	
 	control c0(.clk(CLOCK_50),
 			   .back(back),
 			   .select(select),
@@ -107,6 +128,7 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 			   .switches(SW[9:0]),
 			   .resetn(resetn),
 
+				.address(address),
 			   .clearAllCounter(clearAllCounter),
 			   .ld_pic_NO(ld_pic_NO),
 			   .ld_plot(ld_plot),
@@ -169,7 +191,7 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 				.colour(colour),
 
 				.note_out(note[31:0]),
-				.address());
+				.address(address));
 
 	// Create an Instance of a VGA controller - there can be only one!
 	// Define the number of colours as well as the initial background
@@ -193,7 +215,7 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 		defparam VGA.RESOLUTION = "160x120";
 		defparam VGA.MONOCHROME = "FALSE";
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 2;
-		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+		defparam VGA.BACKGROUND_IMAGE = "../VGA_mif/black.mif";
 
 	// VGA pictures
 	single_note singlenotePic(.address(draw_address), .clock(CLOCK_50), .data(3'b000), .wren(1'b0), .q(colour_out_singlenotePic));
@@ -202,10 +224,12 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 	background backgroundPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_background));
 	recording recordingPic(.address(draw_address), .clock(CLOCK_50), .data(6'b000000), .wren(1'b0), .q(colour_out_recording));
 
-
 	///////////////////////////////////AUDIO DEMO MODULE///////////////////////////////
 	Audio_Demo audio1(
 	//Input From top module
+		.record_high(record_high),
+		.is_play(is_play),
+	   .Sound_mode(SW[5:3]), //need the signal to output [0 square wave] [1 guitar sound]
 		.note_out(note[31:0]),
 		//.note_out(32'd1),
 	// Inputs
@@ -224,7 +248,6 @@ module stage2(CLOCK_50, GPIO_0, SW, KEY, LEDR, HEX0, HEX1, HEX4, HEX5, VGA_CLK, 
 		// Outputs
 		.AUD_XCK(AUD_XCK),
 		.AUD_DACDAT(AUD_DACDAT),
-
 		.FPGA_I2C_SCLK(FPGA_I2C_SCLK)
 	);
 	///////////////////////////////////////////////////////////////////////////////////
@@ -291,6 +314,7 @@ module control(
 	input [9:0] switches,
 	input resetn,
 
+	input [5:0] address, 
 	// input signals for VGA
 	input [7:0] counterX,
 	input [6:0] counterY,
@@ -473,6 +497,8 @@ module control(
 			S_RECORDING: begin
 				if (select)
 					next_state = S_RECORDING_WAIT;
+				else if(address > 6'd19)
+					next_state = S_RECORDING_STOP_WHITE_CLEAR;
 				else
 					next_state = S_RECORDING;
 			end
@@ -732,29 +758,12 @@ module control(
 					ld_plot = 1'b1;
 					is_red = 1'b1;
 				end
+				if(address == 6'd19)
+					record_reset = 1'b1;
 			end
 			S_PLAYING_WAIT:
 				is_play = 1;
 		endcase
-
-		/*
-		case(plot_current_state)
-			P_INIT: plot_next_state = is_record ? P_CLEAR : P_INIT;
-			P_CLEAR: plot_next_state = P_PLOT;
-			P_PLOT: begin
-				ld_pic_NO = 3'd2;
-				ld_plot = 1'b1;
-				initialX = 8'b00000000;
-				initialY = 7'b0000000;
-				if(counterX < 8'd159)
-					incrementX = 1;
-				else if(counterY < 7'd120) begin
-					initializeX = 1;
-					incrementY = 1;
-				end
-			end
-		endcase
-		*/
 	end
 
 	// state_FFs
@@ -1024,7 +1033,8 @@ module datapath(
 	wire [31:0] Note,note;
 	coordinates_converter C_C0(.S(s), .P(p), .note(Note)); //
 
-   	ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
+   ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(~go), .q(note));
+	//ram64x32 r(.data(Note), .wren(wren), .address(address), .clock(clk), .q(note));
 	//when go=0, is_record=1,bits are loaded to the ram
 	//when go=0, is_record=0,bits are read from the ram
 
@@ -1032,7 +1042,7 @@ module datapath(
 	wire [5:0] VGA_note_coorX;
 	wire [4:0] VGA_note_coorY;
 	wire is_undefined;
-	Note_out_to_coord N_C0(.note_out(Note), .X(guitar_coorX), .Y(guitar_coorY));
+	Note_out_to_coord N_C0(.note_out(note), .X(guitar_coorX), .Y(guitar_coorY));
 	guitar_coor_to_VGA_coor G_C0(.guitarX(guitar_coorX), .guitarY(guitar_coorY), .VGAX(VGA_note_coorX), .VGAY(VGA_note_coorY), .is_undefined(is_undefined));
 
 	//output from ram to audio
@@ -1042,7 +1052,7 @@ module datapath(
 		if (is_play == 1'b1)//when replay
 			note_out = note;
 		if((is_record == 1'b0)&(is_play == 1'b0))
-		   	note_out = 32'b0;
+		   note_out = 32'b0;
 	end
 
 endmodule

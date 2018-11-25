@@ -1,0 +1,3 @@
+Info (10281): Verilog HDL Declaration information at stage2.v(794): object "S" differs only in case from object "s" in the same scope File: //SRVA/Homes$/hesiwei1/Desktop/ece241/final_1122/stage2.v Line: 794
+Info (10281): Verilog HDL Declaration information at stage2.v(795): object "P" differs only in case from object "p" in the same scope File: //SRVA/Homes$/hesiwei1/Desktop/ece241/final_1122/stage2.v Line: 795
+Info (10281): Verilog HDL Declaration information at stage2.v(1033): object "Note" differs only in case from object "note" in the same scope File: //SRVA/Homes$/hesiwei1/Desktop/ece241/final_1122/stage2.v Line: 1033

@@ -1,0 +1,39 @@
+
+State Machine - |stage2|Audio_Demo:audio1|avconf:avc|mSetup_ST
+Name mSetup_ST.0000 mSetup_ST.0010 mSetup_ST.0001 
+mSetup_ST.0000 0 0 0 
+mSetup_ST.0001 1 0 1 
+mSetup_ST.0010 1 1 0 
+
+State Machine - |stage2|control:c0|current_state
+Name current_state.STOP_WAIT current_state.S_PLAY_STOP current_state.S_PLAYING_WAIT current_state.S_PLAYING current_state.S_WAIT_PLAY_WAIT current_state.S_WAIT_PLAY current_state.S_RECORD_STOP current_state.S_RECORDING_STOP_WHITE current_state.S_RECORDING_STOP_WHITE_CLEAR current_state.S_RECORDING_WAIT current_state.S_RECORDING current_state.S_RECORDING_PLOT current_state.S_RECORDING_CLEAR current_state.S_RECORDING_WHITE current_state.S_RECORDING_WHITE_CLEAR current_state.S_WAIT_RECORD_WAIT current_state.S_WAIT_RECORD current_state.S_PLOT_NOTEBACKGROUND current_state.S_PLOT_NOTEBACKGROUND_CLEAR current_state.S_SELECT_MODE_WAIT current_state.S_SELECT_TWO current_state.S_SELECT_TWO_CLEAR current_state.S_SELECT_ONE current_state.S_SELECT_ONE_CLEAR current_state.S_SELECT_MODE current_state.S_WHITE_OPTION current_state.S_WHITE_OPTION_CLEAR current_state.S_PLOT_BACKGROUND_END current_state.S_PLOT_BACKGROUND current_state.S_BEGIN 
+current_state.S_BEGIN 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+current_state.S_PLOT_BACKGROUND 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+current_state.S_PLOT_BACKGROUND_END 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+current_state.S_WHITE_OPTION_CLEAR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+current_state.S_WHITE_OPTION 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+current_state.S_SELECT_MODE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+current_state.S_SELECT_ONE_CLEAR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+current_state.S_SELECT_ONE 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+current_state.S_SELECT_TWO_CLEAR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+current_state.S_SELECT_TWO 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+current_state.S_SELECT_MODE_WAIT 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+current_state.S_PLOT_NOTEBACKGROUND_CLEAR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_PLOT_NOTEBACKGROUND 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_WAIT_RECORD 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_WAIT_RECORD_WAIT 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING_WHITE_CLEAR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING_WHITE 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING_CLEAR 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING_PLOT 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING_WAIT 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING_STOP_WHITE_CLEAR 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORDING_STOP_WHITE 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_RECORD_STOP 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_WAIT_PLAY 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_WAIT_PLAY_WAIT 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_PLAYING 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_PLAYING_WAIT 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.S_PLAY_STOP 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
+current_state.STOP_WAIT 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 
